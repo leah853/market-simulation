@@ -96,13 +96,21 @@ body{background:var(--bg);color:var(--t);font-family:'Inter',system-ui,sans-seri
 /* Narration panel */
 .narr-panel{display:flex;flex-direction:column;overflow-y:auto;padding:16px 18px}
 .narr-title{font-size:13px;font-weight:700;color:var(--bl);margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.narr-entry{padding:12px 14px;margin-bottom:8px;border-radius:var(--radius);background:var(--c);border-left:4px solid var(--b);font-size:12px;color:var(--td);line-height:1.6}
+.narr-entry{padding:14px 16px;margin-bottom:10px;border-radius:var(--radius);background:var(--c);border-left:4px solid var(--b);font-size:12px;color:var(--td);line-height:1.7}
 .narr-entry b{color:var(--t)}
 .narr-entry.highlight{border-left-color:var(--o);background:rgba(232,89,12,.03)}
 .narr-entry.trigger{border-left-color:var(--pk);background:rgba(214,51,108,.03)}
 .narr-entry.workflow{border-left-color:var(--cy);background:rgba(8,145,178,.03)}
 .narr-entry.done{border-left-color:var(--g);background:rgba(5,150,105,.03)}
-.narr-entry .wk{font-size:10px;font-weight:700;color:var(--tm);display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
+.narr-entry.blocked{border-left-color:var(--pk);background:rgba(214,51,108,.04)}
+.narr-entry .wk{font-size:10px;font-weight:700;color:var(--tm);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.narr-entry .outcome{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;margin-top:4px}
+.narr-entry .outcome.success{background:rgba(5,150,105,.1);color:var(--g)}
+.narr-entry .outcome.fail{background:rgba(214,51,108,.1);color:var(--pk)}
+.narr-entry .outcome.pending{background:rgba(217,132,13,.1);color:var(--y)}
+.narr-entry .task-list{margin:6px 0 2px;padding-left:4px}
+.narr-entry .task-list div{padding:2px 0;font-size:11px}
+.narr-entry .task-list .act{color:var(--cy)}.narr-entry .task-list .pass{color:var(--g)}.narr-entry .task-list .fail-item{color:var(--pk)}
 
 /* Bottom stats strip */
 .sim-stats{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1px;background:var(--b);flex-shrink:0;max-height:150px}
@@ -733,32 +741,71 @@ function simTick(){
       if(pg.stage===4){
         const sa=S.sas[pg.saId];
         if(sa.status==='not_started'){sa.status='in_progress';startWF(sa);
-          addNarr('trigger',`<b>SA Workflow Triggered!</b> Physician Group #${pg.id} (${VERTS.find(v=>v.key===pg.vert).name}) in <b>${sa.name}</b> reached <b>BOFU</b> via ${channel}. This activates the full market analysis workflow: Home Health Market Analysis, PG Market Analysis, and Cultural Market Analysis will now run in parallel for the entire ${sa.name} metro area (${(sa.pop/1e6).toFixed(1)}M population, ${sa.totalHHs} home healths).`);
+          addNarr('trigger',`<b>🔥 SA WORKFLOW TRIGGERED</b><div class="task-list"><div><b>Trigger:</b> PG #${pg.id} (${VERTS.find(v=>v.key===pg.vert).name}) reached <b>BOFU</b> via ${channel}</div><div><b>SA:</b> ${sa.name} (${(sa.pop/1e6).toFixed(1)}M pop, ${sa.totalHHs} home healths)</div><div style="margin-top:4px"><b>Tasks Activated:</b></div><div class="act">▸ Task 1: Home Health Market Analysis — identify all ${sa.totalHHs} HH agencies</div><div class="act">▸ Task 2: PG Market Analysis — map physician group density & coverage</div><div class="act">▸ Task 3: Cultural Market Analysis — assess regional adoption factors</div><div style="margin-top:4px"><span class="outcome pending">All 3 tasks running in parallel</span></div></div>`);
         }
       }
       if(pg.stage===5){S.sas[pg.saId].pgsClosed++;
-        addNarr('done',`<b>PG #${pg.id} Closed!</b> A ${VERTS.find(v=>v.key===pg.vert).name} group in ${S.sas[pg.saId].name} has completed the full acquisition funnel (Prospect → Target → TOFU → MOFU → BOFU → Closed). Conversion driven by ${channel}.`);
+        addNarr('done',`<b>✅ PG #${pg.id} — CLOSED</b><div class="task-list"><div class="pass">✓ Vertical: ${VERTS.find(v=>v.key===pg.vert).name}</div><div class="pass">✓ SA: ${S.sas[pg.saId].name}</div><div class="pass">✓ Funnel complete: Prospect → Target → TOFU → MOFU → BOFU → Closed</div><div class="pass">✓ Conversion channel: ${channel}</div><div class="pass">✓ Linked Home Healths: ${pg.linkedHHs.length}</div><div style="margin-top:4px"><span class="outcome success">OUTCOME: Acquisition complete — CS workflow will trigger</span></div></div>`);
       }
     }
   }
 
   const pgCounts=Array(6).fill(0);S.pgs.forEach(p=>pgCounts[p.stage]++);
   const byStage={};promoted.forEach(p=>{const k=FUNNELS[p.to].label;byStage[k]=(byStage[k]||0)+1;});
-  const movements=Object.entries(byStage).map(([k,v])=>`${v} → ${k}`);
 
-  let weekSummary=`<b>Funnel:</b> ${FUNNELS.map((f,i)=>`${f.label}: ${pgCounts[i]}`).join(' · ')}`;
-  if(movements.length) weekSummary+=`<br><b>This week:</b> ${movements.join(', ')} (via ${channel})`;
-  else weekSummary+=`<br><b>This week:</b> No PG stage changes. Nurturing continues via ${channel}.`;
+  // ── Detailed weekly summary with tasks/actions/outcomes ──
+  let weekSummary=`<b>📋 WEEKLY REPORT — Week ${S.tick}</b>`;
+  weekSummary+=`<div class="task-list">`;
 
+  // Funnel state
+  weekSummary+=`<div><b>Funnel State:</b> ${FUNNELS.map((f,i)=>`${f.icon} ${f.label}: <b>${pgCounts[i]}</b>`).join(' · ')}</div>`;
+
+  // PG movements with detail
+  if(promoted.length){
+    weekSummary+=`<div style="margin-top:4px"><b>PG Movements This Week</b> (via ${channel}):</div>`;
+    promoted.forEach(p=>{
+      const fromLabel=FUNNELS[p.from].label,toLabel=FUNNELS[p.to].label;
+      const saName=S.sas[p.pg.saId].abbr;
+      const vertName=VERTS.find(v=>v.key===p.pg.vert).name;
+      if(p.to===4){
+        weekSummary+=`<div class="act">▸ PG #${p.pg.id} (${vertName}, ${saName}): ${fromLabel} → <b>${toLabel}</b> <span class="outcome pending">BOFU — Triggers SA Workflow</span></div>`;
+      } else if(p.to===5){
+        weekSummary+=`<div class="pass">✓ PG #${p.pg.id} (${vertName}, ${saName}): ${fromLabel} → <b>${toLabel}</b> <span class="outcome success">CLOSED — Triggers CS Workflow</span></div>`;
+      } else {
+        weekSummary+=`<div>→ PG #${p.pg.id} (${vertName}, ${saName}): ${fromLabel} → <b>${toLabel}</b></div>`;
+      }
+    });
+  } else {
+    weekSummary+=`<div style="margin-top:4px;color:var(--tm)">No PG stage changes this week. Nurturing continues via ${channel}.</div>`;
+  }
+
+  // SA workflow status
   S.sas.forEach(sa=>{
     if(sa.status==='in_progress'){
       const hd=sa.hhs.filter(h=>h.done).length;
+      const hb=sa.hhs.filter(h=>h.blocked).length;
+      const ha=sa.hhs.filter(h=>h.started&&!h.done&&!h.blocked).length;
       const pct=sa.hhs.length?Math.round(hd/sa.hhs.length*100):0;
-      weekSummary+=`<br><b>${sa.abbr}:</b> ${sa.wfPhase==='branches'?'Parallel analysis running':'HHAH processing'} — ${hd}/${sa.hhs.length} agencies done (${pct}%)`;
+      weekSummary+=`<div style="margin-top:4px"><b>${sa.abbr} SA Workflow:</b> Phase: ${sa.wfPhase}</div>`;
+      weekSummary+=`<div class="act">▸ HH Agencies: ${hd}/${sa.hhs.length} done (${pct}%) · ${ha} active · ${hb} blocked</div>`;
+      weekSummary+=`<div>▸ Cultural Analysis: ${sa.subWf.cultural===2?'<span class="outcome success">Complete</span>':sa.subWf.cultural===1?'<span class="outcome pending">Running</span>':'○ Pending'} · PG Analysis: ${sa.subWf.pg===2?'<span class="outcome success">Complete</span>':sa.subWf.pg===1?'<span class="outcome pending">Running</span>':'○ Pending'}</div>`;
     } else if(sa.status==='completed'){
-      weekSummary+=`<br><b>${sa.abbr}:</b> ✅ Complete — all agencies analyzed`;
+      weekSummary+=`<div style="margin-top:4px" class="pass"><b>${sa.abbr}:</b> <span class="outcome success">✅ Complete — all agencies analyzed</span></div>`;
     }
   });
+
+  // CS workflow summary
+  const csActive=S.pgs.filter(p=>p.stage>=5&&p.cs.phase!=='idle'&&p.cs.phase!=='complete');
+  const csDone=S.pgs.filter(p=>p.cs.phase==='complete');
+  const csBlocked=S.pgs.filter(p=>p.stage>=5&&p.cs.blocked);
+  if(csActive.length||csDone.length){
+    weekSummary+=`<div style="margin-top:4px"><b>Customer Success:</b> ${csActive.length} active · ${csDone.length} complete · ${csBlocked.length} blocked</div>`;
+    csActive.forEach(p=>{
+      weekSummary+=`<div class="act">▸ PG #${p.id}: ${CS_LABELS[p.cs.phase]}${p.cs.blocked?' <span class="outcome fail">BLOCKED: '+p.cs.blockType.replace(/_/g,' ')+'</span>':''}</div>`;
+    });
+  }
+
+  weekSummary+=`</div>`;
   addNarr('highlight',weekSummary);
 
   for(const sa of S.sas)if(sa.status==='in_progress')processWF(sa);
@@ -808,7 +855,7 @@ function processWF(sa){
       sa.aN.add('market');
       if(sa.wfT>=2){sa.subWf.cultural=1;sa.subWf.pg=1;sa.subWf.hhah=1;
         ['cultural','pg_analysis','hhah_analysis'].forEach(n=>{sa.aN.add(n);addP(sa,'market',n);});
-        addNarr('workflow',`<b>${sa.name} — Market Analysis Started:</b> Three parallel sub-workflows activated:<br>1. <b>Cultural Market Analysis</b> — assessing regional adoption factors and local market nuances.<br>2. <b>PG Market Analysis</b> — mapping physician group density and coverage gaps.<br>3. <b>Home Health Market Analysis</b> — identifying all home health agencies (${sa.totalHHs} expected).`);
+        addNarr('workflow',`<b>⟳ ${sa.name} — MARKET ANALYSIS STARTED</b><div class="task-list"><div><b>Actions Executing (Parallel):</b></div><div class="act">▸ Cultural Analysis: Assessing regional adoption factors, cultural dynamics, local market nuances</div><div class="act">▸ PG Market Analysis: Mapping physician group density, coverage gaps, saturation analysis</div><div class="act">▸ HH Market Analysis: Identifying all ${sa.totalHHs} home health agencies in metro area</div><div style="margin-top:4px"><b>Expected Duration:</b> Cultural ~3 weeks, PG ~4 weeks, HH varies by agency count</div><div><span class="outcome pending">STATUS: All 3 sub-workflows running</span></div></div>`);
         sa.wfPhase='branches';sa.wfT=0;}
       break;
     case 'branches':
@@ -816,7 +863,7 @@ function processWF(sa){
       if(sa.subWf.pg===1&&sa.wfT>=4){sa.subWf.pg=2;sa.aN.delete('pg_analysis');sa.cN.add('pg_analysis');}
       if(sa.subWf.hhah===1&&sa.wfT>=3){sa.subWf.hhah=2;sa.aN.delete('hhah_analysis');sa.cN.add('hhah_analysis');
         sa.aN.add('get_hhahs');addP(sa,'hhah_analysis','get_hhahs');
-        addNarr('workflow',`<b>${sa.name}:</b> Home health analysis complete. Found <b>${sa.hhs.length} agencies</b>. Now querying NPI registry.`);
+        addNarr('workflow',`<b>${sa.name} — HH ANALYSIS COMPLETE</b><div class="task-list"><div class="pass">✓ Home Health Market Analysis: Found <b>${sa.hhs.length} agencies</b> in metro area</div><div class="act">▸ Next: Querying NPI registry for each agency — starting Task 1 (Find All Home Healths)</div><div><b>Actions:</b> Query NPI → Filter entity types → Remove duplicates → Find locations</div><div><span class="outcome success">OUTCOME: ${sa.hhs.length} agencies queued for processing</span></div></div>`);
         sa.wfPhase='get';sa.wfT=0;}
       break;
     case 'get':
@@ -829,7 +876,7 @@ function processWF(sa){
         h.blockTick++;
         if(rng()<V('retry_rate')){
           h.blocked=false;h.done=true;
-          addNarr('done',`<b>${h.name}:</b> Recovered from "${h.blockType}" after ${h.blockTick} week(s). Marked complete.`);
+          addNarr('done',`<b>✅ ${h.name} — RECOVERED</b><div class="task-list"><div class="pass">✓ Blocker "${h.blockType.replace(/_/g,' ')}" resolved after ${h.blockTick} week(s) of retry</div><div class="pass">✓ Retry succeeded (rate: ${Math.round(V('retry_rate')*100)}%)</div><div><span class="outcome success">OUTCOME: Recovered — marked complete</span></div></div>`);
           h.blockType=null;h.blockTick=0;
         }
       });
@@ -839,7 +886,8 @@ function processWF(sa){
       break;
     case 'complete':
       if(sa.wfT>=1){sa.status='completed';sa.done=true;S.wfRuns++;
-        addNarr('done',`<b>✅ ${sa.name} complete!</b> All ${sa.hhs.length} home health agencies analyzed (100% coverage).`);}
+        const noLocs=sa.hhs.filter(h=>h.wfStep===6).length;const analyzed=sa.hhs.length-noLocs;
+        addNarr('done',`<b>✅ ${sa.name} — SA WORKFLOW COMPLETE</b><div class="task-list"><div class="pass">✓ Home Health Coverage: ${sa.hhs.length}/${sa.hhs.length} agencies processed (100%)</div><div class="pass">✓ Successfully analyzed: ${analyzed} agencies</div>${noLocs?`<div class="fail-item">✗ No locations found: ${noLocs} agencies</div>`:''}<div class="pass">✓ PG Market Analysis: Complete</div><div class="pass">✓ Cultural Market Analysis: Complete</div><div style="margin-top:4px"><span class="outcome success">OUTCOME: All SA tasks complete — ready for CS workflows</span></div></div>`);}
       break;
   }
 }
@@ -850,7 +898,7 @@ function hhLoop(sa){
     ['npi_query','find_locs','loop','output'].forEach(n=>sa.cN.add(n));
     sa.aN.add('output');addP(sa,'loop','output');
     const anyBlocked=sa.hhs.some(h=>h.blocked);
-    if(anyBlocked){sa.wfPhase='waiting_recovery';sa.wfT=0;addNarr('workflow',`<b>${sa.name}:</b> All agencies attempted. ${sa.hhs.filter(h=>h.blocked).length} still blocked — waiting for retry/recovery.`);}
+    if(anyBlocked){const blockedHHs=sa.hhs.filter(h=>h.blocked);sa.wfPhase='waiting_recovery';sa.wfT=0;addNarr('blocked',`<b>⏳ ${sa.name} — WAITING FOR RECOVERY</b><div class="task-list"><div>All ${sa.hhs.length} agencies attempted. <b>${blockedHHs.length}</b> still blocked:</div>${blockedHHs.map(h=>`<div class="fail-item">✗ ${h.name}: blocked at "${h.blockType.replace(/_/g,' ')}" (${h.blockTick} week(s))</div>`).join('')}<div style="margin-top:4px"><b>Recovery:</b> Retrying each week with ${Math.round(V('retry_rate')*100)}% success rate per attempt</div><div><span class="outcome fail">OUTCOME: ${blockedHHs.length} agencies require resolution before SA can complete</span></div></div>`);}
     else{sa.wfPhase='complete';sa.wfT=0;}
     return;
   }
@@ -859,12 +907,12 @@ function hhLoop(sa){
     h.blockTick++;
     if(rng()<V('retry_rate')){
       h.blocked=false;
-      addNarr('done',`<b>${h.name}:</b> Recovered from "${h.blockType}" block after ${h.blockTick} week(s).`);
+      addNarr('done',`<b>✅ ${h.name} — RECOVERED</b><div class="task-list"><div class="pass">✓ Blocker "${h.blockType.replace(/_/g,' ')}" resolved after ${h.blockTick} week(s)</div><div><span class="outcome success">OUTCOME: Resuming workflow</span></div></div>`);
       h.blockType=null;h.blockTick=0;
     } else return;
   }
   if(!h.started){h.started=true;h.wfStep=1;h.stepTicks=0;sa.wfT=0;sa.aN.add('npi_query');
-    addNarr('workflow',`<b>${sa.name} — Agency ${i+1}/${sa.hhs.length}:</b> Starting analysis of <b>${h.name}</b>. Task 1: Querying NPI registry.`);
+    addNarr('workflow',`<b>⟳ ${sa.name} — AGENCY ${i+1}/${sa.hhs.length}: ${h.name}</b><div class="task-list"><div><b>Task 1: Find All Home Healths</b></div><div class="act">▸ Action: Query NPI registry for home health entity</div><div class="act">▸ Action: Filter to Home Health Agency entity type</div><div class="act">▸ Action: Remove duplicates → produce unique list</div><div>NPI: ${h.npi}</div><div><span class="outcome pending">STATUS: Processing started</span></div></div>`);
   }
   if(sa.wfT>=1){
     sa.wfT=0;
@@ -875,27 +923,27 @@ function hhLoop(sa){
       const prevMap={2:'npi_query',3:'npi_filter',4:'npi_dedup',5:'find_locs',7:'decision',8:'search_fp',9:'id_branches',10:'std_addr',11:'dedup_loc',12:'corp_id',13:'corp_conf',14:'acct_map'};
       if(h.wfStep===4&&rng()<V('p_block_data')){
         h.blocked=true;h.blockType='data_missing';h.blockTick=0;
-        addNarr('workflow',`<b>${h.name}:</b> ⚠ BLOCKED — missing source data. Will retry (${Math.round(V('retry_rate')*100)}% success rate).`);return;
+        addNarr('blocked',`<b>⚠ ${h.name} — BLOCKED at Task 2: Find Locations</b><div class="task-list"><div class="fail-item">✗ Action Failed: Search source data / web for location footprint</div><div class="fail-item">✗ Reason: Missing source data — no location records found in primary databases</div><div>Condition: IF no locations → mark "no_confirmed_locations"</div><div style="margin-top:4px"><b>Recovery:</b> Will retry each week with ${Math.round(V('retry_rate')*100)}% success rate</div><div><span class="outcome fail">OUTCOME: BLOCKED — data_missing</span></div></div>`);return;
       }
       if(h.wfStep===11&&rng()<V('p_block_structure')){
         h.blocked=true;h.blockType='structure_uncertain';h.blockTick=0;
-        addNarr('workflow',`<b>${h.name}:</b> ⚠ BLOCKED — corporate structure unclear. Will retry.`);return;
+        addNarr('blocked',`<b>⚠ ${h.name} — BLOCKED at Task 3: Corporate Structure</b><div class="task-list"><div class="fail-item">✗ Action Failed: Query corporate registries for parent entity</div><div class="fail-item">✗ Reason: Corporate structure unclear — insufficient registry data</div><div>Condition: Unable to determine "Member of Parent" vs "Independent"</div><div style="margin-top:4px"><b>Recovery:</b> Will retry each week with ${Math.round(V('retry_rate')*100)}% success rate</div><div><span class="outcome fail">OUTCOME: BLOCKED — structure_uncertain</span></div></div>`);return;
       }
       if(h.wfStep===13&&rng()<V('p_block_contacts')){
         h.blocked=true;h.blockType='no_contacts';h.blockTick=0;
-        addNarr('workflow',`<b>${h.name}:</b> ⚠ BLOCKED — unable to find key contacts. Will retry.`);return;
+        addNarr('blocked',`<b>⚠ ${h.name} — BLOCKED at Task 4: Account Mapping</b><div class="task-list"><div class="fail-item">✗ Action Failed: Search LinkedIn for corporate & regional leaders</div><div class="fail-item">✗ Reason: Unable to find key contacts for account mapping</div><div>Condition: IF no contacts → mark account map "Partial"</div><div style="margin-top:4px"><b>Recovery:</b> Will retry each week with ${Math.round(V('retry_rate')*100)}% success rate</div><div><span class="outcome fail">OUTCOME: BLOCKED — no_contacts</span></div></div>`);return;
       }
       if(h.wfStep===5){
         sa.aN.delete('find_locs');sa.aN.add('decision');addP(sa,'find_locs','decision');
         if(h.locs===0){h.wfStep=6;h.done=true;sa.aN.add('no_loc');addP(sa,'decision','no_loc');
-          addNarr('workflow',`<b>${h.name}:</b> No confirmed locations found. Marked as "no_confirmed_locations." Moving to next agency.`);
+          addNarr('blocked',`<b>${h.name} — Task 2 DECISION: No Locations</b><div class="task-list"><div class="fail-item">✗ Task 2: Find All Locations — no confirmed office locations found</div><div class="fail-item">✗ Actions completed: Searched source data, web, NPI registry — 0 results</div><div>Condition met: IF no locations → mark "no_confirmed_locations"</div><div class="fail-item">✗ Skipping Task 3 (Corporate Structure) and Task 4 (Account Mapping)</div><div><span class="outcome fail">OUTCOME: Marked no_confirmed_locations — moving to next agency</span></div></div>`);
           setTimeout(()=>{sa.aN.delete('no_loc');sa.aN.delete('decision');},500);sa.wfCur++;sa.wfT=0;return;}
         else{addP(sa,'decision','search_fp');}
       } else if(h.wfStep===15){
         h.done=true;['acct_cont','acct_dec','partial','corp_dec','corp_id','corp_conf','acct_map','decision'].forEach(n=>sa.aN.delete(n));
         addP(sa,'acct_cont','output');
         const corpDetail=h.corp==='Member of Parent'?'Confirmed parent org — multi-location map built.':h.corp==='Probable Affiliation'?'Probable affiliation — mapped at regional level.':h.corp==='Independent'?'No parent found — mapped at location level.':'Corporate structure unknown.';
-        addNarr('done',`<b>${h.name} — Complete!</b><br>• <b>Locations:</b> ${h.locs} office(s), standardized & deduped.<br>• <b>Corporate:</b> ${h.corp} (${h.conf} confidence). ${corpDetail}<br>• <b>Account Map:</b> ${h.locs>2?'Key contacts identified via LinkedIn.':'Contacts mapped at location level.'}`);
+        addNarr('done',`<b>✅ ${h.name} — ALL TASKS COMPLETE</b><div class="task-list"><div class="pass">✓ Task 1: Find All Home Healths — NPI queried, filtered, deduplicated</div><div class="pass">✓ Task 2: Find All Locations — ${h.locs} office(s) found, addresses standardized (USPS), deduplicated</div><div class="pass">✓ Task 3: Corporate Structure — ${h.corp} (${h.conf} confidence). ${corpDetail}</div><div class="pass">✓ Task 4: Account Map — ${h.locs>2?'Key contacts identified: corporate leaders, market leaders via LinkedIn':'Contacts mapped at location level'}</div><div style="margin-top:4px"><span class="outcome success">OUTCOME: Agency fully analyzed — all 4 tasks passed</span></div></div>`);
         sa.wfCur++;sa.wfT=0;if(sa.wfCur<sa.hhs.length){sa.aN.add('loop');addP(sa,'loop','get_hhahs');}return;
       } else if(nodeMap[h.wfStep]){
         if(prevMap[h.wfStep])sa.aN.delete(prevMap[h.wfStep]);sa.aN.add(nodeMap[h.wfStep]);
@@ -917,56 +965,61 @@ function processAllCS(){
   for(const pg of S.pgs){
     if(pg.stage<5)continue;
     const cs=pg.cs;const sa=S.sas[pg.saId];
-    if(cs.phase==='idle'){cs.phase='enrichment';cs.tick=S.tick;sa.aN.add('cs_trigger');sa.cN.add('cs_trigger');addNarr('workflow',`<b>CS Started: PG #${pg.id}</b> — Customer Success workflow triggered. Beginning Persona Enrichment.`);}
+    if(cs.phase==='idle'){cs.phase='enrichment';cs.tick=S.tick;sa.aN.add('cs_trigger');sa.cN.add('cs_trigger');addNarr('workflow',`<b>⟳ CS WORKFLOW STARTED — PG #${pg.id}</b><div class="task-list"><div><b>Trigger:</b> PG moved from BOFU → Closed</div><div><b>SA:</b> ${sa.name}</div><div style="margin-top:4px"><b>CS Pipeline (6 stages):</b></div><div class="act">▸ 2.1 Persona Enrichment → 2.2 Signatures → 2.3 Rapport → 2.4 BAA → 2.5 EHR → 2.6 HH Onboarding</div><div style="margin-top:4px"><span class="outcome pending">STATUS: Starting with Persona Enrichment</span></div></div>`);}
     if(cs.phase==='complete'){sa.cN.add('cs_done');continue;}
     const csNode=CS_NODE_MAP[cs.phase];if(csNode)sa.aN.add(csNode);
     const phaseIdx=CS_PHASES.indexOf(cs.phase);
     CS_PHASES.slice(1,phaseIdx).forEach(p=>{const n=CS_NODE_MAP[p];if(n)sa.cN.add(n);});
-    if(cs.blocked){cs.blockTick++;if(rng()<V('retry_rate')){cs.blocked=false;addNarr('done',`<b>PG #${pg.id} CS:</b> Recovered from "${cs.blockType}" block.`);cs.blockType=null;cs.blockTick=0;}else continue;}
+    if(cs.blocked){cs.blockTick++;if(rng()<V('retry_rate')){cs.blocked=false;addNarr('done',`<b>✅ PG #${pg.id} CS — RECOVERED</b><div class="task-list"><div class="pass">✓ Blocker "${cs.blockType.replace(/_/g,' ')}" resolved after ${cs.blockTick} week(s)</div><div class="pass">✓ Retry succeeded (rate: ${Math.round(V('retry_rate')*100)}%)</div><div><span class="outcome success">OUTCOME: Resuming CS workflow at ${CS_LABELS[cs.phase]}</span></div></div>`);cs.blockType=null;cs.blockTick=0;}else continue;}
     switch(cs.phase){
       case'enrichment':
-        if(rng()<V('cs_enrich')){cs.enrichDone=true;cs.phase='signatures';addNarr('workflow',`<b>PG #${pg.id}:</b> Persona enrichment complete. Moving to Signature Collection.`);}
-        else addNarr('workflow',`<b>PG #${pg.id}:</b> Enrichment requires additional data. Retrying next week.`);
+        if(rng()<V('cs_enrich')){cs.enrichDone=true;cs.phase='signatures';addNarr('workflow',`<b>PG #${pg.id} — CS 2.1: PERSONA ENRICHMENT</b><div class="task-list"><div class="pass">✓ Action: Identified required personas (physicians, NPPs, admin)</div><div class="pass">✓ Action: Created/enriched accounts with missing info</div><div class="pass">✓ Action: Flagged gaps for further research</div><div><span class="outcome success">OUTCOME: Enrichment complete (${Math.round(V('cs_enrich')*100)}% success rate) → Moving to Signatures</span></div></div>`);}
+        else addNarr('blocked',`<b>PG #${pg.id} — CS 2.1: PERSONA ENRICHMENT</b><div class="task-list"><div class="fail-item">✗ Action: Enrichment requires additional data gathering</div><div>Condition: Falls in ${Math.round((1-V('cs_enrich'))*100)}% requiring significant enrichment</div><div><span class="outcome fail">OUTCOME: Incomplete — retrying next week</span></div></div>`);
         break;
       case'signatures':
         cs.sigAttempts++;
-        if(rng()<V('cs_sig')){cs.sigDone=true;cs.phase='rapport';addNarr('workflow',`<b>PG #${pg.id}:</b> Signatures collected (attempt ${cs.sigAttempts}). Moving to Rapport Building.`);}
-        else addNarr('workflow',`<b>PG #${pg.id}:</b> Signature follow-up needed (attempt ${cs.sigAttempts}). Sending mobile links.`);
+        if(rng()<V('cs_sig')){cs.sigDone=true;cs.phase='rapport';addNarr('workflow',`<b>PG #${pg.id} — CS 2.2: SIGNATURE COLLECTION</b><div class="task-list"><div class="pass">✓ Action: Determined signature requirements per persona</div><div class="pass">✓ Action: Sent signature requests via platform</div><div class="pass">✓ Action: Tracked completion status</div><div>Attempt: ${cs.sigAttempts} · Condition met: ${Math.round(V('cs_sig')*100)}% complete on first attempt</div><div><span class="outcome success">OUTCOME: All signatures collected → Moving to Rapport Building</span></div></div>`);}
+        else addNarr('blocked',`<b>PG #${pg.id} — CS 2.2: SIGNATURE COLLECTION</b><div class="task-list"><div class="fail-item">✗ Action: Signatures incomplete (attempt ${cs.sigAttempts})</div><div class="act">▸ Action: Sending follow-up with mobile links</div><div>Condition: Falls in ${Math.round((1-V('cs_sig'))*100)}% requiring follow-ups</div><div><span class="outcome fail">OUTCOME: Follow-up needed — retrying next week</span></div></div>`);
         break;
       case'rapport':
-        if(rng()<V('cs_rapport')){cs.rapportDone=true;cs.phase='baa';addNarr('workflow',`<b>PG #${pg.id}:</b> Rapport building successful. Moving to BAA.`);}
-        else addNarr('workflow',`<b>PG #${pg.id}:</b> Additional rapport follow-up needed.`);
+        if(rng()<V('cs_rapport')){cs.rapportDone=true;cs.phase='baa';addNarr('workflow',`<b>PG #${pg.id} — CS 2.3: RAPPORT BUILDING</b><div class="task-list"><div class="pass">✓ Action: Scheduled onboarding session</div><div class="pass">✓ Action: Conducted onboarding conversation</div><div class="pass">✓ Action: Captured notes and feedback</div><div>Condition met: ${Math.round(V('cs_rapport')*100)}% respond positively</div><div><span class="outcome success">OUTCOME: Rapport built successfully → Moving to BAA</span></div></div>`);}
+        else addNarr('blocked',`<b>PG #${pg.id} — CS 2.3: RAPPORT BUILDING</b><div class="task-list"><div class="fail-item">✗ Action: Additional follow-up needed</div><div>Condition: Falls in ${Math.round((1-V('cs_rapport'))*100)}% needing additional follow-up</div><div><span class="outcome fail">OUTCOME: Retrying next week</span></div></div>`);
         break;
       case'baa':
-        if(cs.baaRouting){cs.baaDone=true;cs.phase='ehr';cs.baaRouting=false;addNarr('done',`<b>PG #${pg.id}:</b> BAA approved by HIPAA officer. Moving to EHR Access.`);}
-        else if(rng()<V('cs_baa')){cs.baaRouting=true;addNarr('workflow',`<b>PG #${pg.id}:</b> BAA signed. Routing to HIPAA officer for approval.`);}
-        else{cs.blocked=true;cs.blockType='baa_followup';cs.blockTick=0;addNarr('workflow',`<b>PG #${pg.id}:</b> BAA not signed yet. Blocked — following up.`);}
+        if(cs.baaRouting){cs.baaDone=true;cs.phase='ehr';cs.baaRouting=false;addNarr('done',`<b>PG #${pg.id} — CS 2.4: BAA HANDLING — APPROVED</b><div class="task-list"><div class="pass">✓ Action: BAA reviewed and signed by PG</div><div class="pass">✓ Action: Routed to HIPAA officer / CTO</div><div class="pass">✓ Action: Final approval received</div><div>Condition met: Mark onboarding complete once BAA approved</div><div><span class="outcome success">OUTCOME: BAA approved → Moving to EHR Access</span></div></div>`);}
+        else if(rng()<V('cs_baa')){cs.baaRouting=true;addNarr('workflow',`<b>PG #${pg.id} — CS 2.4: BAA HANDLING</b><div class="task-list"><div class="pass">✓ Action: BAA presented for review</div><div class="pass">✓ Action: BAA signed by PG (${Math.round(V('cs_baa')*100)}% sign promptly)</div><div class="act">▸ Action: Routing to HIPAA officer / CTO for final approval</div><div><span class="outcome pending">STATUS: Awaiting HIPAA officer approval (next week)</span></div></div>`);}
+        else{cs.blocked=true;cs.blockType='baa_followup';cs.blockTick=0;addNarr('blocked',`<b>PG #${pg.id} — CS 2.4: BAA HANDLING — BLOCKED</b><div class="task-list"><div class="fail-item">✗ Action: BAA not signed — PG has not responded</div><div>Condition: Falls in ${Math.round((1-V('cs_baa'))*100)}% requiring follow-up</div><div><span class="outcome fail">OUTCOME: BLOCKED — baa_followup. Retrying with ${Math.round(V('retry_rate')*100)}% success rate</span></div></div>`);}
         break;
       case'ehr':
         if(rng()<V('cs_ehr')){cs.ehrDone=true;cs.ehrGranted=true;cs.ehrType=rng()<.5?'API':'Web';
           cs.phase=rng()<V('cs_hh_shared')?'hh_identify':'complete';
-          addNarr('done',`<b>PG #${pg.id}:</b> EHR access granted (${cs.ehrType}). ${cs.phase==='hh_identify'?'Shared patients detected — starting HH identification.':'No shared patients. CS complete.'}`);}
-        else{cs.blocked=true;cs.blockType='ehr_denied';cs.blockTick=0;addNarr('workflow',`<b>PG #${pg.id}:</b> EHR access denied. Blocked — will retry.`);}
+          addNarr('done',`<b>PG #${pg.id} — CS 2.5: EHR ACCESS — GRANTED</b><div class="task-list"><div class="pass">✓ Action: Determined access type: <b>${cs.ehrType}</b></div><div class="pass">✓ Action: Obtained EHR access permissions from PG</div><div class="pass">✓ Action: ${cs.ehrType==='API'?'API credentials received — can retrieve patient data programmatically':'Web portal access granted — manual data retrieval available'}</div>${cs.phase==='hh_identify'?`<div class="act">▸ Condition: ${Math.round(V('cs_hh_shared')*100)}% PGs have shared patients → proceeding to HH identification</div><div><span class="outcome success">OUTCOME: EHR access granted (${cs.ehrType}) → Starting HH Onboarding</span></div>`:`<div>Condition: ${Math.round((1-V('cs_hh_shared'))*100)}% no shared patients → skip HH workflow</div><div><span class="outcome success">OUTCOME: EHR access granted — no shared patients. CS complete</span></div>`}</div>`);}
+        else{cs.blocked=true;cs.blockType='ehr_denied';cs.blockTick=0;addNarr('blocked',`<b>PG #${pg.id} — CS 2.5: EHR ACCESS — DENIED</b><div class="task-list"><div class="fail-item">✗ Action: EHR access request denied by PG</div><div>Condition: Falls in ${Math.round((1-V('cs_ehr'))*100)}% that deny access</div><div class="act">▸ Follow-up: Will retry (${Math.round(V('retry_rate')*100)}% success rate)</div><div><span class="outcome fail">OUTCOME: BLOCKED — ehr_denied</span></div></div>`);}
         break;
       case'hh_identify':
         {const sa2=S.sas[pg.saId];const linked=pg.linkedHHs.length;
         cs.hhIdentified=linked;cs.phase=linked>0?'hh_outreach':'complete';
-        addNarr('workflow',`<b>PG #${pg.id}:</b> Identified ${linked} home health(s) with shared patients. ${linked>0?'Starting outreach.':'No shared HHs — CS complete.'}`);}
+        if(linked>0){
+          const hhNames=pg.linkedHHs.map(idx=>sa2.hhs[idx]?sa2.hhs[idx].name:'HH').join(', ');
+          addNarr('workflow',`<b>PG #${pg.id} — CS 2.6: IDENTIFY SHARED PATIENTS</b><div class="task-list"><div class="pass">✓ Action: Extracted patient data post-EHR access</div><div class="pass">✓ Action: Identified PG ↔ HH relationships via shared patients</div><div class="pass">✓ Found: <b>${linked}</b> home health(s) with shared patients</div><div>HH Agencies: ${hhNames}</div><div><span class="outcome success">OUTCOME: ${linked} HHs identified → Starting baseline outreach</span></div></div>`);
+        } else {
+          addNarr('workflow',`<b>PG #${pg.id} — CS 2.6: IDENTIFY SHARED PATIENTS</b><div class="task-list"><div class="pass">✓ Action: Extracted patient data post-EHR access</div><div>Condition: No shared patients found with any HH agencies</div><div><span class="outcome pending">OUTCOME: No shared HHs — CS workflow complete</span></div></div>`);
+        }}
         break;
       case'hh_outreach':
         if(cs.hhOutreached<cs.hhIdentified){cs.hhOutreached++;
           const roll=rng();
           if(roll<V('cs_hh_resp')){cs.hhResponded++;
-            if(rng()<V('cs_hh_ready')){cs.hhOnboarded++;addNarr('done',`<b>PG #${pg.id} HH ${cs.hhOutreached}:</b> Response received — ready to onboard!`);}
-            else{cs.hhBlocked++;cs.phase='hh_resolve';addNarr('workflow',`<b>PG #${pg.id} HH ${cs.hhOutreached}:</b> Blockers present. Entering resolution.`);}
-          } else addNarr('workflow',`<b>PG #${pg.id} HH ${cs.hhOutreached}:</b> Outreach sent, awaiting response.`);
+            if(rng()<V('cs_hh_ready')){cs.hhOnboarded++;addNarr('done',`<b>PG #${pg.id} — CS 2.6.3: HH ${cs.hhOutreached} OUTREACH — READY</b><div class="task-list"><div class="pass">✓ Action: Baseline outreach sent (email/phone/fax)</div><div class="pass">✓ Action: Response received within SLA</div><div class="pass">✓ Categorized: Ready to Onboard (${Math.round(V('cs_hh_ready')*100)}% rate)</div><div>Progress: ${cs.hhOnboarded}/${cs.hhIdentified} onboarded</div><div><span class="outcome success">OUTCOME: HH ready — proceeding to onboarding</span></div></div>`);}
+            else{cs.hhBlocked++;cs.phase='hh_resolve';addNarr('blocked',`<b>PG #${pg.id} — CS 2.6.3: HH ${cs.hhOutreached} OUTREACH — BLOCKERS</b><div class="task-list"><div class="pass">✓ Action: Response received</div><div class="fail-item">✗ Categorized: Blockers present (Security/Bureaucracy/Resistance)</div><div class="act">▸ Entering CS 2.6.5: Blocker Resolution</div><div>Progress: ${cs.hhOnboarded}/${cs.hhIdentified} onboarded, ${cs.hhBlocked} blocked</div><div><span class="outcome fail">OUTCOME: Blockers detected — entering resolution</span></div></div>`);}
+          } else addNarr('workflow',`<b>PG #${pg.id} — CS 2.6.3: HH ${cs.hhOutreached} OUTREACH</b><div class="task-list"><div class="act">▸ Action: Baseline outreach sent (email/phone/fax)</div><div>Awaiting response — no reply yet this week</div><div>Progress: ${cs.hhOutreached}/${cs.hhIdentified} contacted, ${cs.hhOnboarded} onboarded</div><div><span class="outcome pending">STATUS: Awaiting response</span></div></div>`);
         } else{cs.phase=cs.hhBlocked>0?'hh_resolve':'complete';
-          if(cs.phase==='complete')addNarr('done',`<b>PG #${pg.id}:</b> All HH outreach complete. ${cs.hhOnboarded}/${cs.hhIdentified} onboarded.`);}
+          if(cs.phase==='complete')addNarr('done',`<b>PG #${pg.id} — CS 2.6: HH ONBOARDING COMPLETE</b><div class="task-list"><div class="pass">✓ All ${cs.hhIdentified} HH agencies contacted</div><div class="pass">✓ ${cs.hhOnboarded}/${cs.hhIdentified} successfully onboarded</div><div class="pass">✓ ${cs.hhResponded} responded, ${cs.hhIdentified-cs.hhResponded} no response</div><div><span class="outcome success">OUTCOME: HH outreach complete — CS workflow finished</span></div></div>`);}
         break;
       case'hh_resolve':
-        if(cs.hhBlocked>0&&rng()<V('cs_hh_resolve')){cs.hhBlocked--;cs.hhOnboarded++;addNarr('done',`<b>PG #${pg.id}:</b> HH blocker resolved! ${cs.hhOnboarded}/${cs.hhIdentified} onboarded.`);}
+        if(cs.hhBlocked>0&&rng()<V('cs_hh_resolve')){cs.hhBlocked--;cs.hhOnboarded++;addNarr('done',`<b>PG #${pg.id} — CS 2.6.5: BLOCKER RESOLVED</b><div class="task-list"><div class="pass">✓ Action: Blocker identified and addressed</div><div class="pass">✓ Resolution: Successfully resolved (${Math.round(V('cs_hh_resolve')*100)}% resolve rate)</div><div>Progress: ${cs.hhOnboarded}/${cs.hhIdentified} onboarded, ${cs.hhBlocked} remaining blockers</div><div><span class="outcome success">OUTCOME: HH moved to Ready to Onboard</span></div></div>`);}
         if(cs.hhBlocked<=0){cs.phase=cs.hhOutreached<cs.hhIdentified?'hh_outreach':'complete';
-          if(cs.phase==='complete')addNarr('done',`<b>PG #${pg.id}:</b> CS workflow complete. ${cs.hhOnboarded}/${cs.hhIdentified} HHs onboarded.`);}
+          if(cs.phase==='complete')addNarr('done',`<b>✅ PG #${pg.id} — CS WORKFLOW COMPLETE</b><div class="task-list"><div class="pass">✓ CS 2.1: Persona Enrichment — Complete</div><div class="pass">✓ CS 2.2: Signature Collection — Complete</div><div class="pass">✓ CS 2.3: Rapport Building — Complete</div><div class="pass">✓ CS 2.4: BAA Handling — Approved</div><div class="pass">✓ CS 2.5: EHR Access — Granted (${cs.ehrType||'N/A'})</div><div class="pass">✓ CS 2.6: HH Onboarding — ${cs.hhOnboarded}/${cs.hhIdentified} onboarded</div><div style="margin-top:4px"><span class="outcome success">OUTCOME: All CS tasks complete for PG #${pg.id}</span></div></div>`);}
         break;
     }
   }
