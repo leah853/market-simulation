@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Market Growth & Workflow Simulation Engine</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f8f9fb;--p:#ffffff;--c:#f1f5f9;--b:#e2e8f0;--t:#1e293b;--td:#475569;--tm:#94a3b8;--o:#ea580c;--cy:#0891b2;--g:#16a34a;--pk:#db2777;--y:#ca8a04;--bl:#2563eb;--pu:#7c3aed}
+body{background:var(--bg);color:var(--t);font-family:'Inter',-apple-system,system-ui,sans-serif;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+.hdr{background:var(--p);border-bottom:1px solid var(--b);padding:8px 20px;display:flex;align-items:center;justify-content:space-between}
+.hdr h1{font-size:14px;font-weight:700;letter-spacing:.3px}.hdr h1 span{color:var(--o)}
+.hdr-right{display:flex;gap:8px;align-items:center}
+.badge{padding:3px 10px;border-radius:10px;font-size:10px;font-weight:600;border:1px solid}
+
+.summary-bar{background:var(--p);border-bottom:1px solid var(--b);padding:5px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.sum-group{display:flex;align-items:center;gap:5px}
+.sum-group-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--tm);margin-right:2px}
+.sum-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;background:var(--c);border:1px solid var(--b)}
+.sum-chip .cnt{font-variant-numeric:tabular-nums;font-weight:800}
+.sum-divider{width:1px;height:18px;background:var(--b)}
+.sum-sa{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;border:1px solid var(--b)}
+
+.top-tabs{display:flex;background:var(--p);border-bottom:1px solid var(--b);padding:0 20px}
+.top-tab{padding:7px 20px;font-size:11px;font-weight:600;color:var(--tm);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.top-tab:hover{color:var(--td)}.top-tab.on{color:var(--bl);border-bottom-color:var(--bl)}
+
+.views{flex:1;position:relative;overflow:hidden;min-height:0}
+.vw{position:absolute;inset:0;overflow:hidden;background:var(--bg);visibility:hidden;pointer-events:none;z-index:0}
+.vw.on{visibility:visible;pointer-events:auto;z-index:1}
+
+/* SIM VIEW - new layout: map+narration side by side, stats below */
+.sim-view{display:flex;flex-direction:column;overflow:hidden}
+.sim-toggle{display:flex;gap:6px;padding:6px 16px;background:var(--p);border-bottom:1px solid var(--b);flex-shrink:0}
+.sim-btn{padding:4px 12px;border-radius:6px;background:var(--c);border:1px solid var(--b);color:var(--td);font-size:10px;font-weight:600;cursor:pointer;transition:all .15s}
+.sim-btn:hover{border-color:var(--td)}.sim-btn.on{background:var(--bl);color:#fff;border-color:var(--bl)}
+.sim-main{flex:1;display:grid;grid-template-columns:1fr 340px;gap:1px;background:var(--b);min-height:0;overflow:hidden}
+.sim-main>div{background:var(--p);min-height:0}
+.sim-canvas-wrap{position:relative;overflow:hidden}
+.sim-canvas-wrap canvas{display:block}
+/* Narration panel */
+.narr-panel{display:flex;flex-direction:column;overflow-y:auto;padding:12px 14px}
+.narr-panel .narr-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--bl);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.narr-entry{padding:8px 10px;margin-bottom:6px;border-radius:8px;background:var(--c);border-left:3px solid var(--b);font-size:11px;color:var(--td);line-height:1.5}
+.narr-entry b{color:var(--t)}
+.narr-entry.highlight{border-left-color:var(--o);background:rgba(234,88,12,.04)}
+.narr-entry.trigger{border-left-color:var(--pk);background:rgba(219,39,119,.04)}
+.narr-entry.workflow{border-left-color:var(--cy);background:rgba(8,145,178,.04)}
+.narr-entry.done{border-left-color:var(--g);background:rgba(22,163,74,.04)}
+.narr-entry .wk{font-size:9px;font-weight:700;color:var(--tm);display:block;margin-bottom:2px}
+
+/* Bottom stats strip */
+.sim-stats{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1px;background:var(--b);flex-shrink:0;max-height:140px}
+.sim-stats>div{background:var(--p);padding:6px 10px;overflow-y:auto}
+.section-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--tm);margin:4px 0 3px}
+.section-title:first-child{margin-top:0}
+.fn-row{display:flex;align-items:center;gap:5px;margin-bottom:1px}
+.fn-lbl{font-size:8px;color:var(--td);width:42px;text-align:right;flex-shrink:0}
+.fn-bar{height:16px;border-radius:3px;display:flex;align-items:center;justify-content:center;transition:width .5s ease;min-width:20px}
+.fn-bar span{font-size:9px;font-weight:700;color:#fff}
+.vert-row{display:flex;align-items:center;gap:4px;padding:1px 0}
+.vert-dot{width:6px;height:6px;border-radius:2px;flex-shrink:0}
+.vert-name{font-size:8px;color:var(--td);flex:1}
+.vert-count{font-size:9px;font-weight:700;font-variant-numeric:tabular-nums}
+.growth-wrap canvas{height:35px;background:var(--c);border-radius:3px;display:block}
+.wf-chip-wrap{display:flex;gap:3px;flex-wrap:wrap}
+.wf-chip-sm{display:inline-flex;align-items:center;gap:2px;padding:2px 6px;border-radius:8px;font-size:9px;font-weight:700;background:var(--c);border:1px solid var(--b)}
+.wf-chip-sm .dot{width:5px;height:5px;border-radius:50%}
+
+/* WORKFLOW DETAIL */
+.wfd-view{display:flex;flex-direction:column;overflow:hidden}
+.wfd-top{display:flex;gap:1px;background:var(--b);flex-shrink:0}
+.wfd-top>div{background:var(--p);padding:8px 12px}
+.wfd-kpi{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.wfd-kpi-card{padding:6px 14px;border-radius:8px;background:var(--c);border:1px solid var(--b);text-align:center;min-width:70px}
+.wfd-kpi-card .kv{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.wfd-kpi-card .kl{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--tm);margin-top:2px}
+.wfd-sa-cards{display:flex;gap:8px}
+.wfd-sa-card{flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--b);background:var(--c);cursor:pointer}
+.wfd-sa-card .sa-name{font-size:11px;font-weight:700;margin-bottom:3px}
+.wfd-sa-card .sa-prog-bar{height:4px;background:rgba(0,0,0,.06);border-radius:2px;margin-top:4px}
+.wfd-sa-card .sa-prog-fill{height:100%;border-radius:2px;transition:width .3s}
+.wfd-graph-wrap{flex:1;position:relative;min-height:200px;border-bottom:1px solid var(--b)}
+.wfd-graph-wrap canvas{display:block}
+.wfd-bottom{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--b);flex-shrink:0;max-height:220px}
+.wfd-bottom>div{background:var(--p);padding:8px 12px;overflow-y:auto}
+.wfd-instance-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.wfd-inst-chip{padding:3px 10px;border-radius:6px;font-size:10px;font-weight:600;background:var(--c);border:1px solid var(--b)}
+.hh-tbl{width:100%;border-collapse:collapse;font-size:10px}
+.hh-tbl th{text-align:left;padding:4px 5px;color:var(--tm);font-weight:700;text-transform:uppercase;font-size:8px;letter-spacing:.5px;border-bottom:2px solid var(--b);position:sticky;top:0;background:var(--p);z-index:1}
+.hh-tbl td{padding:3px 5px;border-bottom:1px solid var(--b);color:var(--td);white-space:nowrap}
+.hh-tbl tr.cur{background:rgba(8,145,178,.06)}
+.hh-tbl tr.stuck{background:rgba(219,39,119,.04)}
+.hh-tbl tr.delayed{background:rgba(202,138,4,.04)}
+.status-badge{display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:8px;font-size:9px;font-weight:700;white-space:nowrap}
+.status-badge.done{background:rgba(22,163,74,.1);color:var(--g)}
+.status-badge.active{background:rgba(8,145,178,.1);color:var(--cy)}
+.status-badge.stuck{background:rgba(219,39,119,.1);color:var(--pk)}
+.status-badge.delayed{background:rgba(202,138,4,.1);color:var(--y)}
+.status-badge.pending{background:var(--c);color:var(--tm)}
+.status-badge.no-locs{background:rgba(219,39,119,.1);color:var(--pk)}
+.task-card{background:var(--c);border-radius:6px;padding:6px 8px;margin-bottom:5px;border-left:2px solid var(--tm)}
+.task-card.active{border-left-color:var(--cy);background:rgba(8,145,178,.04)}
+.task-card.done{border-left-color:var(--g);background:rgba(22,163,74,.04)}
+.task-name{font-size:10px;font-weight:700;display:flex;align-items:center;gap:4px;margin-bottom:3px}
+.task-item{font-size:8px;color:var(--tm);padding:1px 0 1px 10px;line-height:1.3}
+.task-item.done{color:var(--g)}.task-item.active{color:var(--cy)}
+.task-cond{font-size:8px;color:var(--pk);padding:1px 0 1px 10px;font-style:italic;line-height:1.3}
+.task-cond.yes{color:var(--g)}.task-cond.no{color:var(--pk)}
+.log-entry{font-size:8px;color:var(--td);padding:2px 0;border-bottom:1px solid var(--b);line-height:1.3}
+.log-entry .lt{color:var(--tm);margin-right:3px;font-variant-numeric:tabular-nums}
+canvas{display:block}
+
+/* CONTROL TOWER */
+.ct-view{display:grid;grid-template-columns:380px 1fr;gap:1px;background:var(--b);overflow:hidden}
+.ct-view>div{background:var(--p);overflow-y:auto;padding:12px}
+.ct-group{margin-bottom:10px}
+.ct-group-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--bl);margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid var(--b)}
+.ct-var{display:flex;align-items:center;gap:6px;padding:3px 0}
+.ct-var label{font-size:9px;color:var(--td);flex:1}
+.ct-var input{width:70px;padding:2px 6px;border:1px solid var(--b);border-radius:4px;font-size:10px;font-weight:600;text-align:right;font-variant-numeric:tabular-nums;background:var(--c);color:var(--t)}
+.ct-var input:focus{outline:none;border-color:var(--bl)}
+.ct-var .unit{font-size:8px;color:var(--tm);width:20px}
+.ct-reset-flag{display:inline-block;font-size:7px;padding:1px 5px;border-radius:4px;background:rgba(234,88,12,.1);color:var(--o);font-weight:700;margin-left:4px}
+.ct-formula{font-size:9px;color:var(--td);padding:4px 8px;margin-bottom:3px;background:var(--c);border-radius:4px;font-family:monospace;display:flex;justify-content:space-between}
+.ct-formula .fv{font-weight:700;color:var(--t)}
+.ct-metric{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.ct-card{padding:8px;border-radius:6px;background:var(--c);border:1px solid var(--b);text-align:center}
+.ct-card .cv{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+.ct-card .cl{font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);margin-top:1px}
+.ct-bar-row{display:flex;align-items:center;gap:6px;padding:2px 0;font-size:9px;color:var(--td)}
+.ct-bar-row .bl{width:60px;text-align:right;flex-shrink:0}
+.ct-bar-row .bw{flex:1;height:6px;background:rgba(0,0,0,.04);border-radius:3px;overflow:hidden}
+.ct-bar-row .bf{height:100%;border-radius:3px;transition:width .3s}
+.ct-bar-row .bv{width:35px;font-weight:700;font-variant-numeric:tabular-nums}
+.ct-sa-card{padding:8px 10px;border-radius:6px;background:var(--c);border:1px solid var(--b);margin-bottom:6px}
+.ct-sa-card .sa-hdr{display:flex;justify-content:space-between;align-items:center;font-size:10px;font-weight:700;margin-bottom:4px}
+.ct-checklist{font-size:8px;color:var(--td)}
+.ct-checklist div{padding:1px 0}
+
+.ftr{background:var(--p);border-top:1px solid var(--b);padding:6px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.ftr button{background:var(--c);color:var(--t);border:1px solid var(--b);padding:4px 14px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;transition:all .15s}
+.ftr button:hover,.ftr button.on{background:var(--bl);border-color:var(--bl);color:#fff}
+.ftr button.live-on{background:var(--g);border-color:var(--g);color:#fff}
+.ftr button:disabled{opacity:.35;cursor:default;pointer-events:none}
+.viewing-past .sim-canvas-wrap::after{content:'Viewing Week 'attr(data-vw);position:absolute;top:8px;left:50%;transform:translateX(-50%);background:var(--o);color:#fff;padding:2px 12px;border-radius:10px;font-size:10px;font-weight:700;z-index:2;pointer-events:none}
+.speed-ctl{display:flex;align-items:center;gap:6px}
+.speed-ctl label{font-size:10px;color:var(--td)}
+input[type=range]{-webkit-appearance:none;width:80px;height:3px;background:var(--c);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--bl);cursor:pointer}
+.ftr .ftr-info{margin-left:auto;font-size:11px;color:var(--td)}.ftr .ftr-info b{color:var(--t);font-variant-numeric:tabular-nums}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:2px}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <h1>Market Growth & <span>Workflow Simulation Engine</span></h1>
+  <div class="hdr-right">
+    <div class="badge" style="color:var(--bl);border-color:rgba(37,99,235,.25)" id="phaseBadge">Phase: National Acquisition</div>
+    <div class="badge" style="color:var(--g);border-color:rgba(22,163,74,.25)" id="weekBadge">Week 0</div>
+  </div>
+</div>
+<div class="summary-bar" id="summaryBar"></div>
+<div class="top-tabs">
+  <div class="top-tab on" data-v="sim">Simulation</div>
+  <div class="top-tab" data-v="wfd">Workflow Detail</div>
+  <div class="top-tab" data-v="orch">Orchestrator</div>
+  <div class="top-tab" data-v="ct">Control Tower</div>
+</div>
+<div class="views">
+  <!-- SIMULATION VIEW -->
+  <div class="vw on sim-view" id="v-sim">
+    <div class="sim-toggle" id="simToggle"></div>
+    <div class="sim-main">
+      <div class="sim-canvas-wrap"><canvas id="mapCanvas"></canvas></div>
+      <div class="narr-panel" id="narrPanel"></div>
+    </div>
+    <div class="sim-stats">
+      <div>
+        <div class="section-title">Acquisition Funnel</div>
+        <div id="funnelBox"></div>
+      </div>
+      <div>
+        <div class="section-title">Verticals</div>
+        <div id="vertBox"></div>
+      </div>
+      <div>
+        <div class="section-title">Growth</div>
+        <div class="growth-wrap"><canvas id="growthCanvas"></canvas></div>
+      </div>
+      <div>
+        <div class="section-title">Workflow Status</div>
+        <div class="wf-chip-wrap" id="wfChips"></div>
+      </div>
+    </div>
+  </div>
+  <!-- WORKFLOW DETAIL VIEW (restored) -->
+  <div class="vw wfd-view" id="v-wfd">
+    <div class="wfd-top">
+      <div style="flex:1"><div class="wfd-sa-cards" id="wfdSaCards"></div></div>
+      <div><div class="wfd-kpi" id="wfdKpi"></div></div>
+    </div>
+    <div class="wfd-graph-wrap"><canvas id="wfdCanvas"></canvas></div>
+    <div class="wfd-bottom">
+      <div>
+        <div class="section-title">Running Instances</div>
+        <div class="wfd-instance-chips" id="wfdInstChips"></div>
+        <table class="hh-tbl"><thead><tr><th>HHAH</th><th>Current Action</th><th>Status</th><th>Time</th></tr></thead><tbody id="wfdTbody"></tbody></table>
+      </div>
+      <div>
+        <div class="section-title">Task Detail</div>
+        <div id="wfdTaskPanel"></div>
+      </div>
+    </div>
+  </div>
+  <!-- ORCHESTRATOR VIEW (new 4th tab) -->
+  <div class="vw wfd-view" id="v-orch">
+    <div class="wfd-top">
+      <div style="flex:1"><div class="wfd-kpi" id="orchSnap"></div></div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:8px 12px;min-height:0">
+      <div class="section-title">All Workflow Instances</div>
+      <table class="hh-tbl"><thead><tr><th>ID</th><th>Type</th><th>Entity</th><th>Current Action</th><th>Status</th><th>Time</th></tr></thead><tbody id="orchTable"></tbody></table>
+    </div>
+    <div style="max-height:180px;overflow-y:auto;padding:8px 12px;border-top:1px solid var(--b)">
+      <div class="section-title">Intelligence & Bottlenecks</div>
+      <div id="orchIntel"></div>
+    </div>
+  </div>
+  <!-- CONTROL TOWER -->
+  <div class="vw ct-view" id="v-ct">
+    <div>
+      <div class="section-title">Variable Registry</div>
+      <div id="ctVars"></div>
+      <div class="section-title" style="margin-top:12px">Formula Engine</div>
+      <div id="ctFormulas"></div>
+    </div>
+    <div>
+      <div class="section-title">Funnel Metrics</div>
+      <div id="ctFunnel"></div>
+      <div class="section-title">Workflow Metrics</div>
+      <div id="ctWorkflow"></div>
+      <div class="section-title">SA Metrics</div>
+      <div id="ctSA"></div>
+      <div class="section-title">System Metrics</div>
+      <div id="ctSystem"></div>
+    </div>
+  </div>
+</div>
+<div class="ftr">
+  <button id="btnPlay">&#9654; Play</button>
+  <button id="btnStep" title="Advance one week">Next Week ▶</button>
+  <button id="btnReset">Reset</button>
+  <div style="width:1px;height:20px;background:var(--b);margin:0 4px"></div>
+  <button id="btnPrev" title="View previous week">◀ Prev</button>
+  <span id="viewLabel" style="font-size:10px;font-weight:600;color:var(--td);min-width:90px;text-align:center">Week 0</span>
+  <button id="btnNext" title="View next week">Next ▶</button>
+  <button id="btnLive" title="Jump to current week" style="font-size:9px">● LIVE</button>
+  <div style="width:1px;height:20px;background:var(--b);margin:0 4px"></div>
+  <div class="speed-ctl"><label>Speed</label><input type="range" id="speedSlider" min="1" max="10" value="3"><span id="speedVal" style="font-size:10px;color:var(--td)">3x</span></div>
+  <div class="ftr-info">Week <b id="weekNum">0</b> &middot; SAs <b id="sasDone">0/2</b></div>
+</div>
+
+<script>
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+let rng=mulberry32(42);
+
+const FUNNELS=[
+  {key:'prospect',label:'Prospect',color:'#94a3b8',icon:'👤'},
+  {key:'target',label:'Target',color:'#64748b',icon:'🎯'},
+  {key:'tofu',label:'TOFU',color:'#6366f1',icon:'📢'},
+  {key:'mofu',label:'MOFU',color:'#2563eb',icon:'🤝'},
+  {key:'bofu',label:'BOFU',color:'#ea580c',icon:'🔥'},
+  {key:'closed',label:'Closed',color:'#16a34a',icon:'✅'},
+];
+const FWIDTHS=[1,.82,.62,.42,.28,.18];
+// Conversion rates per week. Overall: TOFU→MOFU 60%, MOFU→BOFU 60%, BOFU→Close 80%
+// Tuned so Prospect→Closed averages ~4-6 weeks
+const RATES=[.25,.25,.60,.60,.80];
+const CHANNELS=['Website visits','Conference outreach','Email campaigns','Digital marketing','Brand awareness'];
+const VERTS=[
+  {key:'chc',name:'Community Health Center',color:'#2563eb',pct:.10,icon:'🏥'},
+  {key:'house',name:'Housecall Practice',color:'#ea580c',pct:.03,icon:'🏠'},
+  {key:'va',name:'VA Affiliated',color:'#16a34a',pct:.01,icon:'⚕️'},
+  {key:'indep',name:'Independent Practice',color:'#db2777',pct:.20,icon:'🩺'},
+  {key:'other',name:'Other',color:'#7c3aed',pct:.66,icon:'📋'},
+];
+// Reduced populations: 0.5M and 1M
+const SA_DEFS=[{name:'Dallas-Fort Worth',abbr:'Dallas',pop:0.5e6},{name:'Chicago-Naperville',abbr:'Chicago',pop:1e6}];
+const HH_NAMES=['Sunrise Home Health','Comfort Care HH','Guardian Home Health','Heartland Home Health','Compassion Healthcare','Liberty Home Health','Harmony Home Health','Serenity Home Health'];
+const CORPS=['Independent','Member of Parent','Probable Affiliation','Unknown'];
+const CONFS=['High','Medium','Low'];
+const STEP_NAMES={0:'Pending',1:'Querying NPI Registry',2:'Filtering Entity Types',3:'Removing Duplicates',4:'Finding Locations',5:'Checking Locations',6:'No Locations Found',7:'Searching Data Sources',8:'Identifying Branches',9:'Standardizing Addresses',10:'Deduplicating Locations',11:'Identifying Parent Org',12:'Assessing Confidence',13:'Building Account Map',14:'Finding Key Contacts',15:'Complete'};
+const TASK_STEP_RANGES=[{min:1,max:3,name:'NPI Query'},{min:4,max:10,name:'Find Locations'},{min:11,max:12,name:'Corporate ID'},{min:13,max:15,name:'Account Map'}];
+const STAGE_COLORS=['#cbd5e1','#94a3b8','#6366f1','#2563eb','#ea580c','#16a34a'];
+
+// Unified workflow: SA Market Analysis (top) → PG Closed triggers CS Onboarding (bottom)
+// Connected as one continuous flow within the SA lifecycle
+const WN={
+  // ── PHASE 1: SA MARKET ANALYSIS (y: 0.02–0.48) ──
+  trigger:{x:.01,y:.20,w:.07,h:.05,label:'PG → BOFU\nTrigger',shape:'dashed',color:'#ca8a04',bg:'rgba(202,138,4,.08)'},
+  market:{x:.10,y:.20,w:.06,h:.05,label:'Market\nAnalysis',shape:'rounded',color:'#ea580c',bg:'rgba(234,88,12,.08)'},
+  cultural:{x:.18,y:.03,w:.09,h:.04,label:'Cultural\nAnalysis',shape:'rounded',color:'#7c3aed',bg:'rgba(124,58,237,.06)'},
+  pg_analysis:{x:.18,y:.15,w:.09,h:.04,label:'PG Market\nAnalysis',shape:'rounded',color:'#2563eb',bg:'rgba(37,99,235,.06)'},
+  hhah_analysis:{x:.18,y:.28,w:.09,h:.04,label:'Home Health\nAnalysis',shape:'rounded',color:'#ea580c',bg:'rgba(234,88,12,.06)'},
+  get_hhahs:{x:.30,y:.28,w:.07,h:.04,label:'GET All\nHH',shape:'cylinder',color:'#0891b2',bg:'rgba(8,145,178,.06)'},
+  npi_query:{x:.30,y:.05,w:.08,h:.03,label:'Query NPI',shape:'rounded',color:'#ea580c',bg:'rgba(234,88,12,.05)'},
+  npi_filter:{x:.30,y:.10,w:.08,h:.03,label:'Filter Type',shape:'rounded',color:'#ea580c',bg:'rgba(234,88,12,.03)'},
+  npi_dedup:{x:.30,y:.15,w:.08,h:.03,label:'Dedup NPIs',shape:'rounded',color:'#ea580c',bg:'rgba(234,88,12,.03)'},
+  find_locs:{x:.30,y:.20,w:.08,h:.03,label:'Find Locs',shape:'rounded',color:'#2563eb',bg:'rgba(37,99,235,.05)'},
+  decision:{x:.41,y:.17,w:.05,h:.07,label:'Locs?',shape:'diamond',color:'#db2777',bg:'rgba(219,39,119,.05)'},
+  no_loc:{x:.41,y:.03,w:.06,h:.04,label:'No Locs',shape:'rect-pink',color:'#db2777',bg:'rgba(219,39,119,.06)'},
+  search_fp:{x:.41,y:.27,w:.07,h:.03,label:'Search\nSources',shape:'rounded',color:'#2563eb',bg:'rgba(37,99,235,.03)'},
+  id_branches:{x:.41,y:.32,w:.07,h:.03,label:'ID Branches',shape:'rounded',color:'#2563eb',bg:'rgba(37,99,235,.03)'},
+  std_addr:{x:.41,y:.37,w:.07,h:.03,label:'Std Addr',shape:'rounded',color:'#2563eb',bg:'rgba(37,99,235,.03)'},
+  dedup_loc:{x:.41,y:.42,w:.07,h:.03,label:'Dedup Locs',shape:'rounded',color:'#2563eb',bg:'rgba(37,99,235,.03)'},
+  corp_id:{x:.51,y:.15,w:.07,h:.04,label:'ID Parent\nOrg',shape:'rounded',color:'#7c3aed',bg:'rgba(124,58,237,.05)'},
+  corp_conf:{x:.51,y:.22,w:.07,h:.03,label:'Assess\nConfidence',shape:'rounded',color:'#7c3aed',bg:'rgba(124,58,237,.03)'},
+  corp_dec:{x:.51,y:.28,w:.05,h:.06,label:'Parent?',shape:'diamond',color:'#7c3aed',bg:'rgba(124,58,237,.03)'},
+  acct_map:{x:.59,y:.15,w:.07,h:.04,label:'Build Acct\nMap',shape:'rounded',color:'#2563eb',bg:'rgba(37,99,235,.05)'},
+  acct_cont:{x:.59,y:.22,w:.07,h:.03,label:'Find\nContacts',shape:'rounded',color:'#2563eb',bg:'rgba(37,99,235,.03)'},
+  acct_dec:{x:.59,y:.28,w:.05,h:.06,label:'Found?',shape:'diamond',color:'#2563eb',bg:'rgba(37,99,235,.03)'},
+  partial:{x:.59,y:.37,w:.06,h:.03,label:'Partial Map',shape:'rounded',color:'#ca8a04',bg:'rgba(202,138,4,.03)'},
+  loop:{x:.30,y:.46,w:.08,h:.03,label:'Next HH',shape:'dashed',color:'#475569',bg:'rgba(71,85,105,.03)'},
+  output:{x:.68,y:.20,w:.05,h:.04,label:'HH\nDone ✓',shape:'rounded',color:'#16a34a',bg:'rgba(22,163,74,.06)'},
+
+  // ── PHASE 2: CUSTOMER SUCCESS — PG Onboarding (y: 0.52–0.72) ──
+  cs_trigger:{x:.01,y:.58,w:.07,h:.05,label:'PG Closed\n→ CS Start',shape:'dashed',color:'#16a34a',bg:'rgba(22,163,74,.06)'},
+  cs_enrich:{x:.10,y:.55,w:.07,h:.05,label:'2.1 Persona\nEnrichment',shape:'rounded',color:'#2563eb',bg:'rgba(37,99,235,.05)'},
+  cs_sig:{x:.19,y:.55,w:.07,h:.05,label:'2.2 Signature\nCollection',shape:'rounded',color:'#2563eb',bg:'rgba(37,99,235,.05)'},
+  cs_sig_follow:{x:.19,y:.65,w:.07,h:.03,label:'Follow-up\nMobile Links',shape:'rounded',color:'#2563eb',bg:'rgba(37,99,235,.03)'},
+  cs_rapport:{x:.28,y:.55,w:.07,h:.05,label:'2.3 Rapport\nBuilding',shape:'rounded',color:'#7c3aed',bg:'rgba(124,58,237,.05)'},
+  cs_baa:{x:.37,y:.55,w:.07,h:.05,label:'2.4 BAA\nHandling',shape:'rounded',color:'#ea580c',bg:'rgba(234,88,12,.05)'},
+  cs_baa_dec:{x:.37,y:.65,w:.05,h:.06,label:'BAA\nSigned?',shape:'diamond',color:'#ea580c',bg:'rgba(234,88,12,.03)'},
+  cs_baa_route:{x:.37,y:.74,w:.07,h:.03,label:'Route HIPAA\nOfficer/CTO',shape:'rounded',color:'#ea580c',bg:'rgba(234,88,12,.03)'},
+
+  // ── PHASE 2.5: EHR Access (y: 0.55–0.77) ──
+  cs_ehr:{x:.46,y:.55,w:.07,h:.05,label:'2.5 EHR\nAccess',shape:'rounded',color:'#0891b2',bg:'rgba(8,145,178,.05)'},
+  cs_ehr_dec:{x:.46,y:.65,w:.05,h:.06,label:'Access\nGranted?',shape:'diamond',color:'#0891b2',bg:'rgba(8,145,178,.03)'},
+  cs_ehr_type:{x:.46,y:.74,w:.07,h:.03,label:'Web or\nAPI Access',shape:'rounded',color:'#0891b2',bg:'rgba(8,145,178,.03)'},
+  cs_ehr_deny:{x:.53,y:.74,w:.07,h:.03,label:'Denied →\nFollow-up',shape:'rounded',color:'#db2777',bg:'rgba(219,39,119,.04)'},
+
+  // ── PHASE 2.6: Home Health Onboarding (y: 0.55–0.95) ──
+  cs_hh_id:{x:.55,y:.55,w:.07,h:.05,label:'2.6 Identify\nHH Shared Pts',shape:'rounded',color:'#ea580c',bg:'rgba(234,88,12,.05)'},
+  cs_hh_dec:{x:.55,y:.65,w:.05,h:.06,label:'Shared\nPatients?',shape:'diamond',color:'#ea580c',bg:'rgba(234,88,12,.03)'},
+  cs_no_hh:{x:.55,y:.74,w:.07,h:.03,label:'No Shared →\nSkip HH',shape:'rounded',color:'#94a3b8',bg:'rgba(148,163,184,.04)'},
+  cs_hh_comm:{x:.64,y:.55,w:.07,h:.05,label:'2.6.2 Define\nComm Path',shape:'rounded',color:'#2563eb',bg:'rgba(37,99,235,.05)'},
+  cs_hh_out:{x:.73,y:.55,w:.07,h:.05,label:'2.6.3 Baseline\nOutreach',shape:'rounded',color:'#2563eb',bg:'rgba(37,99,235,.05)'},
+  cs_hh_resp:{x:.73,y:.65,w:.05,h:.06,label:'Response\nReceived?',shape:'diamond',color:'#2563eb',bg:'rgba(37,99,235,.03)'},
+  cs_hh_cat:{x:.73,y:.74,w:.07,h:.03,label:'2.6.4 Categorize\nResponse',shape:'rounded',color:'#7c3aed',bg:'rgba(124,58,237,.03)'},
+  cs_hh_ready:{x:.82,y:.55,w:.07,h:.04,label:'Ready to\nOnboard',shape:'rounded',color:'#16a34a',bg:'rgba(22,163,74,.05)'},
+  cs_hh_block:{x:.82,y:.65,w:.07,h:.05,label:'2.6.5 Blocker\nResolution',shape:'rounded',color:'#db2777',bg:'rgba(219,39,119,.05)'},
+  cs_hh_block_dec:{x:.82,y:.74,w:.05,h:.05,label:'Resolved?',shape:'diamond',color:'#db2777',bg:'rgba(219,39,119,.03)'},
+  cs_hh_strat:{x:.82,y:.82,w:.07,h:.03,label:'PG Strategy\nEscalation',shape:'rounded',color:'#ca8a04',bg:'rgba(202,138,4,.04)'},
+  cs_hh_no_resp:{x:.73,y:.82,w:.07,h:.03,label:'Follow-up\nLoop',shape:'rounded',color:'#94a3b8',bg:'rgba(148,163,184,.04)'},
+  cs_hh_onb:{x:.91,y:.55,w:.06,h:.04,label:'HH\nOnboarded',shape:'rounded',color:'#16a34a',bg:'rgba(22,163,74,.05)'},
+  cs_done:{x:.91,y:.65,w:.06,h:.04,label:'CS\nComplete ✓',shape:'rounded',color:'#16a34a',bg:'rgba(22,163,74,.08)'},
+};
+const WARROWS=[
+  // Phase 1: SA Market Analysis
+  {f:'trigger',t:'market'},{f:'market',t:'cultural'},{f:'market',t:'pg_analysis'},{f:'market',t:'hhah_analysis'},
+  {f:'hhah_analysis',t:'get_hhahs'},{f:'get_hhahs',t:'npi_query',curve:'up'},
+  {f:'npi_query',t:'npi_filter'},{f:'npi_filter',t:'npi_dedup'},{f:'npi_dedup',t:'find_locs'},
+  {f:'find_locs',t:'decision'},{f:'decision',t:'no_loc',label:'No',curve:'up'},
+  {f:'decision',t:'search_fp',label:'Yes'},{f:'search_fp',t:'id_branches'},{f:'id_branches',t:'std_addr'},{f:'std_addr',t:'dedup_loc'},
+  {f:'dedup_loc',t:'corp_id',curve:'up-right'},{f:'corp_id',t:'corp_conf'},{f:'corp_conf',t:'corp_dec'},
+  {f:'corp_dec',t:'acct_map',label:'Yes'},{f:'corp_dec',t:'acct_map',label:'No'},
+  {f:'acct_map',t:'acct_cont'},{f:'acct_cont',t:'acct_dec'},
+  {f:'acct_dec',t:'output',label:'Found'},{f:'acct_dec',t:'partial',label:'None'},
+  {f:'partial',t:'output'},{f:'loop',t:'get_hhahs',style:'dashed',curve:'left-up'},
+  // Transition: SA complete → PG Closed → CS
+  {f:'output',t:'cs_trigger',label:'PG Closed'},
+  // Phase 2: Customer Success — PG Onboarding
+  {f:'cs_trigger',t:'cs_enrich'},{f:'cs_enrich',t:'cs_sig'},
+  {f:'cs_sig',t:'cs_sig_follow',label:'15%'},{f:'cs_sig',t:'cs_rapport',label:'85%'},
+  {f:'cs_sig_follow',t:'cs_rapport'},{f:'cs_rapport',t:'cs_baa'},
+  {f:'cs_baa',t:'cs_baa_dec'},{f:'cs_baa_dec',t:'cs_ehr',label:'80%'},
+  {f:'cs_baa_dec',t:'cs_baa_route',label:'20%'},{f:'cs_baa_route',t:'cs_ehr'},
+  // Phase 2.5: EHR Access
+  {f:'cs_ehr',t:'cs_ehr_dec'},{f:'cs_ehr_dec',t:'cs_hh_id',label:'60%'},
+  {f:'cs_ehr_dec',t:'cs_ehr_deny',label:'40%'},{f:'cs_ehr_deny',t:'cs_ehr',style:'dashed'},
+  {f:'cs_ehr_dec',t:'cs_ehr_type',label:'Type'},
+  // Phase 2.6: HH Onboarding
+  {f:'cs_hh_id',t:'cs_hh_dec'},{f:'cs_hh_dec',t:'cs_hh_comm',label:'65%'},{f:'cs_hh_dec',t:'cs_no_hh',label:'35%'},
+  {f:'cs_no_hh',t:'cs_done'},{f:'cs_hh_comm',t:'cs_hh_out'},
+  {f:'cs_hh_out',t:'cs_hh_resp'},{f:'cs_hh_resp',t:'cs_hh_cat',label:'50%'},
+  {f:'cs_hh_resp',t:'cs_hh_no_resp',label:'No'},{f:'cs_hh_no_resp',t:'cs_hh_out',style:'dashed'},
+  {f:'cs_hh_cat',t:'cs_hh_ready',label:'40%'},{f:'cs_hh_cat',t:'cs_hh_block',label:'35%'},
+  {f:'cs_hh_ready',t:'cs_hh_onb'},{f:'cs_hh_onb',t:'cs_done'},
+  {f:'cs_hh_block',t:'cs_hh_block_dec'},{f:'cs_hh_block_dec',t:'cs_hh_ready',label:'Yes'},
+  {f:'cs_hh_block_dec',t:'cs_hh_strat',label:'No'},{f:'cs_hh_strat',t:'cs_done'},
+];
+const TASKS_DEF=[
+  // SA Market Analysis Tasks
+  {id:'npi',name:'Task 1: Find All Home Healths',items:['Query NPI registry for HH entities in MSA','Filter to Home Health Agency entity type','Remove duplicates → unique list'],conds:[]},
+  {id:'loc',name:'Task 2: Find All Locations',items:['Search source data / web for location footprint','Identify branches, offices, service locations','Standardize addresses (USPS format)','Deduplicate locations'],conds:[{text:'IF no locations → mark "no_confirmed_locations"',type:'no'},{text:'IF multiple locations → standardize & dedup',type:'yes'}]},
+  {id:'corp',name:'Task 3: Corporate Structure',items:['Query corporate registries for parent entity','Identify known family chains / affiliations','Assess confidence level (High / Medium / Low)'],conds:[{text:'IF parent confirmed → "Member of Parent"',type:'yes'},{text:'IF probable → "Probable Affiliation"',type:'no'},{text:'IF none found → "Independent" or "Unknown"',type:'no'}]},
+  {id:'acct',name:'Task 4: Account Mapping',items:['Search LinkedIn for corporate & regional leaders','Build hierarchical org chart (parent → locations)','Inreach: gather contact info for key personnel'],conds:[{text:'IF corporate parent → comprehensive multi-location map',type:'yes'},{text:'IF no contacts → mark account map "Partial"',type:'no'}]},
+  // Customer Success Tasks
+  {id:'cs_enrich',name:'CS 2.1: Persona Enrichment',items:['Identify required personas (physicians, NPPs, admin)','Create or enrich accounts with missing info','Flag gaps for further research'],conds:[{text:'90% PGs have complete persona info',type:'yes'},{text:'10% require significant enrichment',type:'no'}]},
+  {id:'cs_sig',name:'CS 2.2: Signature Collection',items:['Determine signature requirements per persona','Send signature requests via platform','Follow-up with mobile links if incomplete','Track completion status'],conds:[{text:'85% complete on first attempt',type:'yes'},{text:'15% require follow-ups',type:'no'}]},
+  {id:'cs_rapport',name:'CS 2.3: Rapport Building',items:['Schedule onboarding sessions (individual/group)','Conduct onboarding conversations','Capture notes and feedback'],conds:[{text:'95% respond positively',type:'yes'},{text:'5% need additional follow-up',type:'no'}]},
+  {id:'cs_baa',name:'CS 2.4: BAA Handling',items:['Present BAA for review','Capture signed BAA or accept uploaded BAA','Route to HIPAA officer / CTO for final approval'],conds:[{text:'80% sign promptly',type:'yes'},{text:'20% require follow-up',type:'no'},{text:'Mark onboarding complete once BAA approved',type:'yes'}]},
+  {id:'cs_ehr',name:'CS 2.5: EHR Access',items:['Determine access type (Web or API)','Obtain EHR access permissions from PG','Retrieve patient data via API or web interface'],conds:[{text:'60% grant access',type:'yes'},{text:'40% deny → follow-up and retry',type:'no'},{text:'IF granted → distinguish Web vs API access',type:'yes'}]},
+  {id:'cs_hh',name:'CS 2.6: HH Onboarding (Shared Patients)',items:['Extract patient data post-EHR access','Identify PG ↔ HH relationships via shared patients','Define communication path & onboarding needs','Baseline outreach (email/phone/fax)','Track response: 50% in SLA, 30% delayed, 20% no response','Categorize: 40% ready, 35% blockers, 25% no response'],conds:[{text:'65% PGs have shared patients with ≥1 HH',type:'yes'},{text:'35% no shared patients → skip HH workflow',type:'no'},{text:'IF blockers → Security(40%) / Bureaucracy(35%) / Resistance(25%)',type:'no'},{text:'IF resolved → Ready to Onboard',type:'yes'},{text:'IF persistent → Escalate to PG Strategy',type:'no'}]},
+];
+
+// ── VARIABLE REGISTRY ──
+const VAR_REGISTRY=[
+  {id:'pop_dallas',name:'Dallas Population',value:500000,group:'Population',min:100000,max:5000000,step:50000,structural:true},
+  {id:'pop_chicago',name:'Chicago Population',value:1000000,group:'Population',min:100000,max:5000000,step:50000,structural:true},
+  {id:'pg_per_million',name:'PGs per 1M pop',value:500,group:'Ratios',min:50,max:2000,step:50,structural:true},
+  {id:'hh_per_million',name:'Home Healths per 1M pop',value:5,group:'Ratios',min:1,max:50,step:1,structural:true},
+  {id:'physicians_per_1000',name:'Physicians per 1,000 patients',value:3,group:'Ratios',min:1,max:10,step:0.5,structural:false},
+  {id:'rate_prospect_target',name:'Prospect → Target',value:0.25,group:'Conversion',min:0,max:1,step:0.05,structural:false},
+  {id:'rate_target_tofu',name:'Target → TOFU',value:0.25,group:'Conversion',min:0,max:1,step:0.05,structural:false},
+  {id:'rate_tofu_mofu',name:'TOFU → MOFU',value:0.60,group:'Conversion',min:0,max:1,step:0.05,structural:false},
+  {id:'rate_mofu_bofu',name:'MOFU → BOFU',value:0.60,group:'Conversion',min:0,max:1,step:0.05,structural:false},
+  {id:'rate_bofu_close',name:'BOFU → Close',value:0.80,group:'Conversion',min:0,max:1,step:0.05,structural:false},
+  {id:'p_block_data',name:'P(data missing)',value:0.15,group:'Blocking',min:0,max:1,step:0.05,structural:false},
+  {id:'p_block_structure',name:'P(structure uncertain)',value:0.20,group:'Blocking',min:0,max:1,step:0.05,structural:false},
+  {id:'p_block_contacts',name:'P(no contacts)',value:0.10,group:'Blocking',min:0,max:1,step:0.05,structural:false},
+  {id:'retry_rate',name:'Retry success rate',value:0.30,group:'Blocking',min:0,max:1,step:0.05,structural:false},
+  {id:'cs_enrich',name:'Enrichment success',value:0.90,group:'Customer Success',min:0,max:1,step:0.05,structural:false},
+  {id:'cs_sig',name:'Signature 1st attempt',value:0.85,group:'Customer Success',min:0,max:1,step:0.05,structural:false},
+  {id:'cs_rapport',name:'Rapport success',value:0.95,group:'Customer Success',min:0,max:1,step:0.05,structural:false},
+  {id:'cs_baa',name:'BAA sign rate',value:0.80,group:'Customer Success',min:0,max:1,step:0.05,structural:false},
+  {id:'cs_ehr',name:'EHR access granted',value:0.60,group:'Customer Success',min:0,max:1,step:0.05,structural:false},
+  {id:'cs_hh_shared',name:'PGs with shared patients',value:0.65,group:'CS Home Health',min:0,max:1,step:0.05,structural:false},
+  {id:'cs_hh_resp',name:'HH response in SLA',value:0.50,group:'CS Home Health',min:0,max:1,step:0.05,structural:false},
+  {id:'cs_hh_ready',name:'HH ready to onboard',value:0.40,group:'CS Home Health',min:0,max:1,step:0.05,structural:false},
+  {id:'cs_hh_resolve',name:'Blocker resolve rate',value:0.40,group:'CS Home Health',min:0,max:1,step:0.05,structural:false},
+];
+function V(id){return VAR_REGISTRY.find(v=>v.id===id).value;}
+function getRates(){return[V('rate_prospect_target'),V('rate_target_tofu'),V('rate_tofu_mofu'),V('rate_mofu_bofu'),V('rate_bofu_close')];}
+let needsReset=false;
+
+let S={},selSA=0,simView='national',curView='sim';
+let snapshots=[];
+let viewWeek=-1;
+
+function initSim(){
+  rng=mulberry32(42);needsReset=false;
+  const pops=[V('pop_dallas'),V('pop_chicago')];
+  const sas=SA_DEFS.map((d,i)=>{
+    const pop=pops[i]||d.pop;
+    const pgC=Math.round(pop/1e6*V('pg_per_million'));
+    const numHH=Math.max(2,Math.round(pop/1e6*V('hh_per_million')));
+    const hhs=[];
+    for(let h=0;h<numHH;h++){
+      const npi='18'+String(Math.floor(rng()*99999999)).padStart(8,'0');
+      const lc=rng()<.15?0:1+Math.floor(rng()*4);
+      const ci=rng()<.4?1:rng()<.55?0:rng()<.8?2:3;
+      hhs.push({id:`h${i}_${h}`,name:HH_NAMES[h%HH_NAMES.length],npi,locs:lc,
+        corp:CORPS[ci],conf:CONFS[Math.floor(rng()*3)],
+        wfStep:0,started:false,done:false,stepTicks:0,totalTicks:0,
+        blocked:false,blockType:null,blockTick:0});
+    }
+    const displayPGs=Math.round(numHH*3);
+    return{id:i,name:d.name,abbr:d.abbr,pop:pop,totalPGs:displayPGs,totalHHs:numHH,
+      verts:Object.fromEntries(VERTS.map(v=>[v.key,Math.round(displayPGs*v.pct)])),
+      status:'not_started',hhs,subWf:{cultural:0,pg:0,hhah:0},
+      wfPhase:'idle',wfCur:-1,wfT:0,
+      aN:new Set(),cN:new Set(),particles:[],pgsClosed:0,done:false};
+  });
+  const pgs=[];let pid=0;
+  for(const sa of sas){
+    const cnt=Math.round(sa.hhs.length*3); // ~3 PGs per HHAH
+    for(let p=0;p<cnt;p++){
+      let vt='other',cm=0;const r=rng();
+      for(const v of VERTS){cm+=v.pct;if(r<cm){vt=v.key;break;}}
+      pgs.push({id:pid++,saId:sa.id,vert:vt,stage:0,patients:50+Math.floor(rng()*300),linkedHHs:[],
+        cs:{phase:'idle',tick:0,enrichDone:false,sigDone:false,sigAttempts:0,rapportDone:false,baaDone:false,baaRouting:false,
+          ehrDone:false,ehrGranted:false,ehrType:null,
+          hhPhase:'idle',hhIdentified:0,hhOutreached:0,hhResponded:0,hhOnboarded:0,hhBlocked:0,hhDone:false,
+          blocked:false,blockType:null,blockTick:0}});
+    }
+  }
+  for(const pg of pgs){
+    const saHHs=sas[pg.saId].hhs;
+    const n=1+Math.floor(rng()*Math.min(2,saHHs.length));
+    const used=new Set();
+    for(let l=0;l<n;l++){let idx=Math.floor(rng()*saHHs.length);while(used.has(idx))idx=(idx+1)%saHHs.length;used.add(idx);pg.linkedHHs.push(idx);}
+  }
+  S={tick:0,running:false,speed:3,sas,pgs,events:[],wfRuns:0,narration:[],
+    growthHist:[{tick:0,...Object.fromEntries(FUNNELS.map(f=>[f.key,f.key==='prospect'?pgs.length:0]))}]};
+  addNarr('highlight',`<b>Simulation initialized.</b> Modeling acquisition of <b>${pgs.length} physician groups (PGs)</b> across ${sas.length} statistical areas (${sas.map(s=>s.name+' — '+(s.pop/1e6).toFixed(1)+'M pop, '+s.totalPGs+' PGs, '+s.totalHHs+' home healths').join('; ')}).<br><br><b>Acquisition channels:</b> Website, Conferences, Emails, Marketing, Branding.<br><b>Funnel stages:</b> Prospect → Target → TOFU → MOFU → BOFU → Closed.<br><b>Conversion rates:</b> TOFU→MOFU: 60%, MOFU→BOFU: 60%, BOFU→Close: 80%.<br><b>Ratio:</b> ~3 PGs per 1 Home Health Agency.<br><b>Trigger:</b> When a PG reaches BOFU, it activates the SA workflow — Home Health Market Analysis, PG Market Analysis, and Cultural Market Analysis run in parallel.<br><br>Press <b>Play</b> to begin.`);
+}
+
+let narrDirty=true,lastNarrCount=0;
+function addNarr(type,text){S.narration.push({tick:S.tick,type,text});narrDirty=true;}
+
+function simTick(){
+  S.tick++;
+  const channel=CHANNELS[S.tick%CHANNELS.length];
+  let promoted=[];
+  for(const pg of S.pgs){
+    if(pg.stage>=5)continue;
+    if(rng()<getRates()[pg.stage]){
+      const from=pg.stage;pg.stage++;promoted.push({pg,from,to:pg.stage});
+      if(pg.stage===4){
+        const sa=S.sas[pg.saId];
+        if(sa.status==='not_started'){sa.status='in_progress';startWF(sa);
+          addNarr('trigger',`<b>🔥 SA Workflow Triggered!</b> Physician Group #${pg.id} (${VERTS.find(v=>v.key===pg.vert).name}) in <b>${sa.name}</b> reached <b>BOFU</b> via ${channel}. This activates the full market analysis workflow: Home Health Market Analysis, PG Market Analysis, and Cultural Market Analysis will now run in parallel for the entire ${sa.name} metro area (${(sa.pop/1e6).toFixed(1)}M population, ${sa.totalHHs} home healths).`);
+        }
+      }
+      if(pg.stage===5){S.sas[pg.saId].pgsClosed++;
+        addNarr('done',`<b>✅ PG #${pg.id} Closed!</b> A ${VERTS.find(v=>v.key===pg.vert).name} group in ${S.sas[pg.saId].name} has completed the full acquisition funnel (Prospect → Target → TOFU → MOFU → BOFU → Closed). Conversion driven by ${channel}.`);
+      }
+    }
+  }
+
+  // Detailed weekly summary
+  const pgCounts=Array(6).fill(0);S.pgs.forEach(p=>pgCounts[p.stage]++);
+  const byStage={};promoted.forEach(p=>{const k=FUNNELS[p.to].label;byStage[k]=(byStage[k]||0)+1;});
+  const movements=Object.entries(byStage).map(([k,v])=>`${v} → ${k}`);
+
+  let weekSummary=`<b>Funnel:</b> ${FUNNELS.map((f,i)=>`${f.label}: ${pgCounts[i]}`).join(' · ')}`;
+  if(movements.length) weekSummary+=`<br><b>This week:</b> ${movements.join(', ')} (via ${channel})`;
+  else weekSummary+=`<br><b>This week:</b> No PG stage changes. Nurturing continues via ${channel}.`;
+
+  // SA status summaries
+  S.sas.forEach(sa=>{
+    if(sa.status==='in_progress'){
+      const hd=sa.hhs.filter(h=>h.done).length;
+      const pct=sa.hhs.length?Math.round(hd/sa.hhs.length*100):0;
+      weekSummary+=`<br><b>${sa.abbr}:</b> ${sa.wfPhase==='branches'?'Parallel analysis running':'HHAH processing'} — ${hd}/${sa.hhs.length} agencies done (${pct}%)`;
+    } else if(sa.status==='completed'){
+      weekSummary+=`<br><b>${sa.abbr}:</b> ✅ Complete — all agencies analyzed`;
+    }
+  });
+  addNarr('highlight',weekSummary);
+
+  for(const sa of S.sas)if(sa.status==='in_progress')processWF(sa);
+  for(const sa of S.sas)for(const h of sa.hhs)if(h.started&&!h.done){h.stepTicks++;h.totalTicks++;}
+  processAllCS();
+
+  if(S.tick%2===0){
+    const c={tick:S.tick};FUNNELS.forEach(f=>c[f.key]=0);S.pgs.forEach(p=>c[FUNNELS[p.stage].key]++);
+    S.growthHist.push(c);if(S.growthHist.length>120)S.growthHist.shift();
+  }
+  // Save snapshot for week browsing
+  saveSnapshot();
+}
+
+function saveSnapshot(){
+  const snap={
+    tick:S.tick,
+    pgs:S.pgs.map(p=>({...p,linkedHHs:[...p.linkedHHs]})),
+    sas:S.sas.map(sa=>({
+      ...sa,
+      hhs:sa.hhs.map(h=>({...h})),
+      aN:new Set(sa.aN),cN:new Set(sa.cN),particles:[...sa.particles.map(p=>({...p}))],
+      verts:{...sa.verts},subWf:{...sa.subWf}
+    })),
+    narration:S.narration.filter(n=>n.tick<=S.tick),
+    growthHist:S.growthHist.map(g=>({...g})),
+    wfRuns:S.wfRuns,
+  };
+  snapshots[S.tick]=snap;
+}
+
+function getViewState(){
+  if(viewWeek<0||viewWeek>=S.tick||!snapshots[viewWeek])return S;
+  return snapshots[viewWeek];
+}
+
+function startWF(sa){
+  sa.wfPhase='branch_start';sa.wfT=0;
+  sa.aN=new Set(['trigger']);sa.cN=new Set();sa.particles=[];
+  sa.subWf={cultural:0,pg:0,hhah:0};sa.wfCur=-1;
+  sa.hhs.forEach(h=>{h.wfStep=0;h.started=false;h.done=false;h.stepTicks=0;h.totalTicks=0;h.blocked=false;h.blockType=null;h.blockTick=0;});
+  addP(sa,'trigger','market');
+}
+function processWF(sa){
+  sa.wfT++;
+  for(let i=sa.particles.length-1;i>=0;i--){sa.particles[i].t+=sa.particles[i].spd;if(sa.particles[i].t>=1)sa.particles.splice(i,1);}
+  switch(sa.wfPhase){
+    case 'branch_start':
+      sa.aN.add('market');
+      if(sa.wfT>=2){sa.subWf.cultural=1;sa.subWf.pg=1;sa.subWf.hhah=1;
+        ['cultural','pg_analysis','hhah_analysis'].forEach(n=>{sa.aN.add(n);addP(sa,'market',n);});
+        addNarr('workflow',`<b>${sa.name} — Market Analysis Started:</b> Three parallel sub-workflows activated:<br>1. <b>Cultural Market Analysis</b> — assessing regional adoption factors, cultural dynamics, and local market nuances.<br>2. <b>PG Market Analysis</b> — mapping physician group density, coverage gaps, and saturation points across the metro area.<br>3. <b>Home Health Market Analysis</b> — identifying all home health agencies (${sa.totalHHs} expected) for NPI registry query and location analysis.`);
+        sa.wfPhase='branches';sa.wfT=0;}
+      break;
+    case 'branches':
+      if(sa.subWf.cultural===1&&sa.wfT>=3){sa.subWf.cultural=2;sa.aN.delete('cultural');sa.cN.add('cultural');}
+      if(sa.subWf.pg===1&&sa.wfT>=4){sa.subWf.pg=2;sa.aN.delete('pg_analysis');sa.cN.add('pg_analysis');}
+      if(sa.subWf.hhah===1&&sa.wfT>=3){sa.subWf.hhah=2;sa.aN.delete('hhah_analysis');sa.cN.add('hhah_analysis');
+        sa.aN.add('get_hhahs');addP(sa,'hhah_analysis','get_hhahs');
+        addNarr('workflow',`<b>${sa.name}:</b> Home health analysis complete. Found <b>${sa.hhs.length} agencies</b> in the metro area. Now querying the NPI registry for each one.`);
+        sa.wfPhase='get';sa.wfT=0;}
+      break;
+    case 'get':
+      if(sa.wfT>=1){sa.aN.delete('get_hhahs');sa.cN.add('get_hhahs');sa.aN.add('npi_query');addP(sa,'get_hhahs','npi_query');
+        sa.wfPhase='loop';sa.wfCur=0;sa.wfT=0;}
+      break;
+    case 'loop':hhLoop(sa);break;
+    case 'waiting_recovery':
+      // Some HHAHs still blocked — retry each tick
+      sa.hhs.filter(h=>h.blocked).forEach(h=>{
+        h.blockTick++;
+        if(rng()<V('retry_rate')){
+          h.blocked=false;h.done=true;
+          addNarr('done',`<b>${h.name}:</b> Recovered from "${h.blockType}" after ${h.blockTick} week(s). Marked complete.`);
+          h.blockType=null;h.blockTick=0;
+        }
+      });
+      if(sa.hhs.every(h=>h.done)&&sa.subWf.pg===2&&sa.subWf.cultural===2){
+        sa.wfPhase='complete';sa.wfT=0;
+      }
+      break;
+    case 'complete':
+      if(sa.wfT>=1){sa.status='completed';sa.done=true;S.wfRuns++;
+        addNarr('done',`<b>✅ ${sa.name} complete!</b> All ${sa.hhs.length} home health agencies analyzed (100% coverage). PG mapping and cultural analysis verified.`);}
+      break;
+  }
+}
+function hhLoop(sa){
+  const i=sa.wfCur;
+  if(i>=sa.hhs.length){
+    ['npi_query','npi_filter','npi_dedup','find_locs','decision','search_fp','id_branches','std_addr','dedup_loc','corp_id','corp_conf','corp_dec','acct_map','acct_cont','acct_dec','partial','loop'].forEach(n=>sa.aN.delete(n));
+    ['npi_query','find_locs','loop','output'].forEach(n=>sa.cN.add(n));
+    sa.aN.add('output');addP(sa,'loop','output');
+    const anyBlocked=sa.hhs.some(h=>h.blocked);
+    if(anyBlocked){sa.wfPhase='waiting_recovery';sa.wfT=0;addNarr('workflow',`<b>${sa.name}:</b> All agencies attempted. ${sa.hhs.filter(h=>h.blocked).length} still blocked — waiting for retry/recovery.`);}
+    else{sa.wfPhase='complete';sa.wfT=0;}
+    return;
+  }
+  const h=sa.hhs[i];
+  // Retry blocked HHAHs
+  if(h.blocked){
+    h.blockTick++;
+    if(rng()<V('retry_rate')){
+      h.blocked=false;
+      addNarr('done',`<b>${h.name}:</b> Recovered from "${h.blockType}" block after ${h.blockTick} week(s). Resuming workflow.`);
+      h.blockType=null;h.blockTick=0;
+    } else return; // Still blocked
+  }
+  if(!h.started){h.started=true;h.wfStep=1;h.stepTicks=0;sa.wfT=0;sa.aN.add('npi_query');
+    addNarr('workflow',`<b>${sa.name} — Agency ${i+1}/${sa.hhs.length}:</b> Starting analysis of <b>${h.name}</b>.<br>Task 1: Querying NPI registry for home health entity, filtering by entity type, and removing duplicates.`);
+  }
+  // Process multiple steps per tick (30 HHAHs/day ≈ fast processing)
+  if(sa.wfT>=1){
+    sa.wfT=0;
+    // Advance 2-3 steps per tick for speed
+    const stepsToAdvance=2;
+    for(let s=0;s<stepsToAdvance&&h.wfStep<15&&!h.done;s++){
+      h.wfStep++;h.stepTicks=0;
+      const nodeMap={2:'npi_filter',3:'npi_dedup',4:'find_locs',5:'decision',7:'search_fp',8:'id_branches',9:'std_addr',10:'dedup_loc',11:'corp_id',12:'corp_conf',13:'acct_map',14:'acct_cont'};
+      const prevMap={2:'npi_query',3:'npi_filter',4:'npi_dedup',5:'find_locs',7:'decision',8:'search_fp',9:'id_branches',10:'std_addr',11:'dedup_loc',12:'corp_id',13:'corp_conf',14:'acct_map'};
+      // Blocking checks at critical steps
+      if(h.wfStep===4&&rng()<V('p_block_data')){
+        h.blocked=true;h.blockType='data_missing';h.blockTick=0;
+        addNarr('workflow',`<b>${h.name}:</b> ⚠ BLOCKED — missing source data for location search. Will retry each week (${Math.round(V('retry_rate')*100)}% success rate).`);
+        return;
+      }
+      if(h.wfStep===11&&rng()<V('p_block_structure')){
+        h.blocked=true;h.blockType='structure_uncertain';h.blockTick=0;
+        addNarr('workflow',`<b>${h.name}:</b> ⚠ BLOCKED — corporate structure unclear, insufficient registry data. Will retry.`);
+        return;
+      }
+      if(h.wfStep===13&&rng()<V('p_block_contacts')){
+        h.blocked=true;h.blockType='no_contacts';h.blockTick=0;
+        addNarr('workflow',`<b>${h.name}:</b> ⚠ BLOCKED — unable to find key contacts for account mapping. Will retry.`);
+        return;
+      }
+      if(h.wfStep===5){
+        sa.aN.delete('find_locs');sa.aN.add('decision');addP(sa,'find_locs','decision');
+        if(h.locs===0){h.wfStep=6;h.done=true;sa.aN.add('no_loc');addP(sa,'decision','no_loc');
+          addNarr('workflow',`<b>${h.name}:</b> Task 2 decision — no confirmed office locations found in source data or web search. Marked as "no_confirmed_locations." Skipping corporate structure and account mapping. Moving to next agency.`);
+          setTimeout(()=>{sa.aN.delete('no_loc');sa.aN.delete('decision');},500);sa.wfCur++;sa.wfT=0;return;}
+        else{addP(sa,'decision','search_fp');}
+      } else if(h.wfStep===15){
+        h.done=true;['acct_cont','acct_dec','partial','corp_dec','corp_id','corp_conf','acct_map','decision'].forEach(n=>sa.aN.delete(n));
+        addP(sa,'acct_cont','output');
+        const corpDetail=h.corp==='Member of Parent'?'Confirmed parent organization — comprehensive multi-location account map built linking all branches.':h.corp==='Probable Affiliation'?'Probable corporate affiliation identified — mapped at regional level.':h.corp==='Independent'?'No corporate parent found — mapped contacts at individual location level.':'Corporate structure unknown — marked for follow-up.';
+        const contactDetail=h.locs>2?'Key contacts identified: corporate leaders, market leaders, and regional contacts via LinkedIn.':'Contacts mapped at location level.';
+        addNarr('done',`<b>${h.name} — Complete!</b><br>• <b>Locations:</b> ${h.locs} office(s) found, addresses standardized (USPS format) and deduplicated.<br>• <b>Corporate Structure:</b> ${h.corp} (${h.conf} confidence). ${corpDetail}<br>• <b>Account Map:</b> ${contactDetail}`);
+        sa.wfCur++;sa.wfT=0;if(sa.wfCur<sa.hhs.length){sa.aN.add('loop');addP(sa,'loop','get_hhahs');}return;
+      } else if(nodeMap[h.wfStep]){
+        if(prevMap[h.wfStep])sa.aN.delete(prevMap[h.wfStep]);sa.aN.add(nodeMap[h.wfStep]);
+        if(prevMap[h.wfStep])addP(sa,prevMap[h.wfStep],nodeMap[h.wfStep]);
+      }
+    }
+  }
+}
+function addP(sa,f,t){sa.particles.push({from:f,to:t,t:0,spd:.03+rng()*.02});}
+function addLog(type,msg){S.events.unshift({tick:S.tick,type,msg});if(S.events.length>300)S.events.length=300;}
+
+// ── CUSTOMER SUCCESS WORKFLOW ──
+const CS_PHASES=['idle','enrichment','signatures','rapport','baa','ehr','hh_identify','hh_outreach','hh_resolve','complete'];
+const CS_LABELS={idle:'Not Started',enrichment:'Persona Enrichment',signatures:'Signature Collection',rapport:'Rapport Building',baa:'BAA Handling',ehr:'EHR Access',hh_identify:'HH Identification',hh_outreach:'HH Outreach',hh_resolve:'HH Blocker Resolution',complete:'Complete'};
+
+const CS_NODE_MAP={enrichment:'cs_enrich',signatures:'cs_sig',rapport:'cs_rapport',baa:'cs_baa',ehr:'cs_ehr',hh_identify:'cs_hh_id',hh_outreach:'cs_hh_out',hh_resolve:'cs_hh_block',complete:'cs_done'};
+
+function processAllCS(){
+  // Clear CS active nodes (rebuilt each tick)
+  S.sas.forEach(sa=>Object.values(CS_NODE_MAP).forEach(n=>{sa.aN.delete(n);}));
+  for(const pg of S.pgs){
+    if(pg.stage<5)continue;
+    const cs=pg.cs;const sa=S.sas[pg.saId];
+    if(cs.phase==='idle'){cs.phase='enrichment';cs.tick=S.tick;sa.aN.add('cs_trigger');sa.cN.add('cs_trigger');addNarr('workflow',`<b>CS Started: PG #${pg.id}</b> — Customer Success workflow triggered. Beginning Persona Account Enrichment.`);}
+    if(cs.phase==='complete'){sa.cN.add('cs_done');continue;}
+    // Track active CS node on graph
+    const csNode=CS_NODE_MAP[cs.phase];if(csNode)sa.aN.add(csNode);
+    // Mark completed phases
+    const phaseIdx=CS_PHASES.indexOf(cs.phase);
+    CS_PHASES.slice(1,phaseIdx).forEach(p=>{const n=CS_NODE_MAP[p];if(n)sa.cN.add(n);});
+    // Retry blocked CS
+    if(cs.blocked){cs.blockTick++;if(rng()<V('retry_rate')){cs.blocked=false;addNarr('done',`<b>PG #${pg.id} CS:</b> Recovered from "${cs.blockType}" block.`);cs.blockType=null;cs.blockTick=0;}else continue;}
+
+    switch(cs.phase){
+      case'enrichment':
+        if(rng()<V('cs_enrich')){cs.enrichDone=true;cs.phase='signatures';addNarr('workflow',`<b>PG #${pg.id}:</b> Persona enrichment complete (${Math.round(V('cs_enrich')*100)}% success). Moving to Signature Collection.`);}
+        else addNarr('workflow',`<b>PG #${pg.id}:</b> Enrichment requires additional data gathering. Retrying next week.`);
+        break;
+      case'signatures':
+        cs.sigAttempts++;
+        if(rng()<V('cs_sig')){cs.sigDone=true;cs.phase='rapport';addNarr('workflow',`<b>PG #${pg.id}:</b> Signatures collected (attempt ${cs.sigAttempts}). Moving to Rapport Building.`);}
+        else addNarr('workflow',`<b>PG #${pg.id}:</b> Signature follow-up needed (attempt ${cs.sigAttempts}). Sending mobile links.`);
+        break;
+      case'rapport':
+        if(rng()<V('cs_rapport')){cs.rapportDone=true;cs.phase='baa';addNarr('workflow',`<b>PG #${pg.id}:</b> Rapport building successful. Onboarding session completed. Moving to BAA.`);}
+        else addNarr('workflow',`<b>PG #${pg.id}:</b> Additional rapport follow-up needed.`);
+        break;
+      case'baa':
+        if(cs.baaRouting){cs.baaDone=true;cs.phase='ehr';cs.baaRouting=false;addNarr('done',`<b>PG #${pg.id}:</b> BAA approved by HIPAA officer. Moving to EHR Access.`);}
+        else if(rng()<V('cs_baa')){cs.baaRouting=true;addNarr('workflow',`<b>PG #${pg.id}:</b> BAA signed. Routing to HIPAA officer for final approval.`);}
+        else{cs.blocked=true;cs.blockType='baa_followup';cs.blockTick=0;addNarr('workflow',`<b>PG #${pg.id}:</b> BAA not signed yet. Blocked — following up.`);}
+        break;
+      case'ehr':
+        if(rng()<V('cs_ehr')){cs.ehrDone=true;cs.ehrGranted=true;cs.ehrType=rng()<.5?'API':'Web';
+          cs.phase=rng()<V('cs_hh_shared')?'hh_identify':'complete';
+          addNarr('done',`<b>PG #${pg.id}:</b> EHR access granted (${cs.ehrType}). ${cs.phase==='hh_identify'?'Shared patients detected — starting HH identification.':'No shared patients found. CS complete.'}`);}
+        else{cs.blocked=true;cs.blockType='ehr_denied';cs.blockTick=0;addNarr('workflow',`<b>PG #${pg.id}:</b> EHR access denied. Blocked — will retry.`);}
+        break;
+      case'hh_identify':
+        {const sa=S.sas[pg.saId];const linked=pg.linkedHHs.length;
+        cs.hhIdentified=linked;cs.phase=linked>0?'hh_outreach':'complete';
+        addNarr('workflow',`<b>PG #${pg.id}:</b> Identified ${linked} home health(s) with shared patients. ${linked>0?'Starting outreach.':'No shared HHs — CS complete.'}`);}
+        break;
+      case'hh_outreach':
+        if(cs.hhOutreached<cs.hhIdentified){cs.hhOutreached++;
+          const roll=rng();
+          if(roll<V('cs_hh_resp')){cs.hhResponded++;
+            if(rng()<V('cs_hh_ready')){cs.hhOnboarded++;addNarr('done',`<b>PG #${pg.id} HH ${cs.hhOutreached}:</b> Response received — ready to onboard!`);}
+            else{cs.hhBlocked++;cs.phase='hh_resolve';addNarr('workflow',`<b>PG #${pg.id} HH ${cs.hhOutreached}:</b> Response received but blockers present. Entering resolution.`);}
+          } else addNarr('workflow',`<b>PG #${pg.id} HH ${cs.hhOutreached}:</b> Outreach sent, awaiting response.`);
+        } else{cs.phase=cs.hhBlocked>0?'hh_resolve':'complete';
+          if(cs.phase==='complete')addNarr('done',`<b>PG #${pg.id}:</b> All HH outreach complete. ${cs.hhOnboarded}/${cs.hhIdentified} onboarded.`);}
+        break;
+      case'hh_resolve':
+        if(cs.hhBlocked>0&&rng()<V('cs_hh_resolve')){cs.hhBlocked--;cs.hhOnboarded++;addNarr('done',`<b>PG #${pg.id}:</b> HH blocker resolved! ${cs.hhOnboarded}/${cs.hhIdentified} onboarded.`);}
+        if(cs.hhBlocked<=0){cs.phase=cs.hhOutreached<cs.hhIdentified?'hh_outreach':'complete';
+          if(cs.phase==='complete')addNarr('done',`<b>PG #${pg.id}:</b> Customer Success workflow complete. ${cs.hhOnboarded}/${cs.hhIdentified} HHs onboarded.`);}
+        break;
+    }
+  }
+}
+
+// ── RENDERING ──
+let mapC,mapX,grC,grX,wfdC,wfdX;
+function initRendering(){
+  mapC=document.getElementById('mapCanvas');mapX=mapC.getContext('2d');
+  grC=document.getElementById('growthCanvas');grX=grC.getContext('2d');
+  wfdC=document.getElementById('wfdCanvas');wfdX=wfdC.getContext('2d');
+  buildFunnel();buildVerts();buildSimToggle();
+  resizeAll();window.addEventListener('resize',resizeAll);
+}
+function resizeAll(){
+  const dpr=window.devicePixelRatio||1;
+  [[mapC,'.sim-canvas-wrap'],[grC,null],[wfdC,'.wfd-graph-wrap']].forEach(([c,sel])=>{
+    const el=sel?document.querySelector(sel):c.parentElement;if(!el)return;
+    const r=el.getBoundingClientRect();if(r.width<1||r.height<1)return;
+    c.width=r.width*dpr;c.height=r.height*dpr;c.style.width=r.width+'px';c.style.height=r.height+'px';
+    c.getContext('2d').setTransform(dpr,0,0,dpr,0,0);
+  });
+}
+function buildSimToggle(){
+  const box=document.getElementById('simToggle');
+  box.innerHTML=`<div class="sim-btn ${simView==='national'?'on':''}" data-v="national">National</div>`;
+  SA_DEFS.forEach((d,i)=>{box.innerHTML+=`<div class="sim-btn ${simView==='sa'+i?'on':''}" data-v="sa${i}">${d.abbr}</div>`;});
+  box.querySelectorAll('.sim-btn').forEach(b=>b.addEventListener('click',()=>{
+    simView=b.dataset.v;box.querySelectorAll('.sim-btn').forEach(x=>x.classList.toggle('on',x.dataset.v===simView));setTimeout(resizeAll,20);
+  }));
+}
+function buildFunnel(){
+  const box=document.getElementById('funnelBox');box.innerHTML='';
+  FUNNELS.forEach((f,i)=>{box.innerHTML+=`<div class="fn-row"><div class="fn-lbl">${f.icon} ${f.label}</div><div class="fn-bar" id="fb${i}" style="background:${f.color};width:${FWIDTHS[i]*100}%"><span id="fc${i}">0</span></div></div>`;});
+}
+function updateFunnel(VS){
+  VS=VS||S;const c=Array(6).fill(0);VS.pgs.forEach(p=>c[p.stage]++);
+  for(let i=0;i<6;i++){document.getElementById('fc'+i).textContent=c[i];document.getElementById('fb'+i).style.width=Math.max(FWIDTHS[i]*15,FWIDTHS[i]*(c[i]>0?100:15))+'%';}
+}
+function buildVerts(){
+  const box=document.getElementById('vertBox');box.innerHTML='';
+  VERTS.forEach(v=>{box.innerHTML+=`<div class="vert-row"><div class="vert-dot" style="background:${v.color}"></div><div class="vert-name">${v.name}</div><div class="vert-count" id="vc_${v.key}" style="color:${v.color}">0</div></div>`;});
+}
+function updateVerts(VS){
+  VS=VS||S;const c={};VERTS.forEach(v=>c[v.key]=0);VS.pgs.forEach(p=>{if(p.stage>=1)c[p.vert]++;});
+  VERTS.forEach(v=>{const el=document.getElementById('vc_'+v.key);if(el)el.textContent=c[v.key];});
+}
+function updateSummaryBar(VS){
+  VS=VS||S;const pgC=Array(6).fill(0);VS.pgs.forEach(p=>pgC[p.stage]++);
+  let hhD=0,hhA=0,hhP=0,hhT=0,hhB=0;
+  VS.sas.forEach(sa=>sa.hhs.forEach(h=>{hhT++;if(h.done)hhD++;else if(h.blocked)hhB++;else if(h.started)hhA++;else hhP++;}));
+  document.getElementById('summaryBar').innerHTML=`
+    <div class="sum-group"><span class="sum-group-label">PGs</span>${FUNNELS.map((f,i)=>`<span class="sum-chip" style="border-color:${f.color}30">${f.icon} <span class="cnt" style="color:${f.color}">${pgC[i]}</span></span>`).join('')}</div>
+    <div class="sum-divider"></div>
+    <div class="sum-group"><span class="sum-group-label">Home Healths</span>
+      <span class="sum-chip"><span class="cnt">${hhT}</span> Total</span>
+      <span class="sum-chip" style="border-color:rgba(22,163,74,.3)"><span class="cnt" style="color:var(--g)">${hhD}</span> Done</span>
+      <span class="sum-chip" style="border-color:rgba(8,145,178,.3)"><span class="cnt" style="color:var(--cy)">${hhA}</span> Active</span>
+      ${hhB?`<span class="sum-chip" style="border-color:rgba(219,39,119,.3)"><span class="cnt" style="color:var(--pk)">${hhB}</span> Blocked</span>`:''}
+      <span class="sum-chip"><span class="cnt" style="color:var(--tm)">${hhP}</span> Pending</span>
+    </div>
+    <div class="sum-divider"></div>
+    <div class="sum-group"><span class="sum-group-label">Areas</span>${VS.sas.map(sa=>{
+      const col=sa.status==='completed'?'var(--g)':sa.status==='in_progress'?'var(--cy)':'var(--tm)';
+      const ic=sa.status==='completed'?'✅':sa.status==='in_progress'?'⟳':'○';
+      return`<span class="sum-sa" style="color:${col}">${ic} ${sa.abbr}</span>`;
+    }).join('')}</div>`;
+}
+
+// ── Draw helpers ──
+function drawCross(ctx,x,y,sz,color,alpha){
+  ctx.globalAlpha=alpha;ctx.fillStyle=color;const t=Math.max(sz*.35,1.5);
+  ctx.fillRect(x-sz,y-t/2,sz*2,t);ctx.fillRect(x-t/2,y-sz,t,sz*2);ctx.globalAlpha=1;
+}
+function drawHouse(ctx,x,y,sz,color,alpha){
+  ctx.globalAlpha=alpha;ctx.fillStyle=color;ctx.beginPath();
+  ctx.moveTo(x,y-sz);ctx.lineTo(x+sz,y-sz*.3);ctx.lineTo(x+sz*.6,y-sz*.3);
+  ctx.lineTo(x+sz*.6,y+sz*.5);ctx.lineTo(x-sz*.6,y+sz*.5);
+  ctx.lineTo(x-sz*.6,y-sz*.3);ctx.lineTo(x-sz,y-sz*.3);ctx.closePath();ctx.fill();ctx.globalAlpha=1;
+}
+
+function renderMap(VS){
+  VS=VS||S;const ctx=mapX,dpr=window.devicePixelRatio||1;
+  const W=mapC.width/dpr,H=mapC.height/dpr;
+  ctx.clearRect(0,0,W,H);
+  const vColors={chc:'#2563eb',house:'#ea580c',va:'#16a34a',indep:'#db2777',other:'#7c3aed'};
+  const showSAs=simView==='national'?VS.sas:[VS.sas[parseInt(simView.slice(2))]];
+  const isSingle=showSAs.length===1;
+
+  showSAs.forEach((sa,si)=>{
+    const cx=isSingle?W*.5:si===0?W*.32:W*.68;
+    const cy=H*.5;
+    const radius=isSingle?Math.min(W*.4,H*.42):Math.min(W*.25,H*.4);
+
+    // SA boundary
+    ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);
+    ctx.fillStyle=sa.status==='completed'?'rgba(22,163,74,.04)':sa.status==='in_progress'?'rgba(8,145,178,.04)':'rgba(100,116,139,.02)';
+    ctx.fill();ctx.strokeStyle=sa.status==='completed'?'rgba(22,163,74,.3)':sa.status==='in_progress'?'rgba(8,145,178,.25)':'rgba(100,116,139,.12)';
+    ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.stroke();ctx.setLineDash([]);
+
+    // SA label
+    ctx.font=`bold ${isSingle?'16':'13'}px system-ui`;
+    ctx.fillStyle=sa.status==='completed'?'#16a34a':sa.status==='in_progress'?'#0891b2':'#475569';
+    ctx.textAlign='center';ctx.fillText(sa.name,cx,cy-radius-18);
+    ctx.font=`${isSingle?'12':'10'}px system-ui`;ctx.fillStyle='#94a3b8';
+    ctx.fillText(`${(sa.pop/1e6).toFixed(1)}M pop · ${sa.totalPGs} PGs · ${sa.totalHHs} Home Healths`,cx,cy-radius-4);
+
+    const saPGs=VS.pgs.filter(p=>p.saId===sa.id);
+    const stageGroups=[[],[],[],[],[],[]];
+    saPGs.forEach(pg=>stageGroups[pg.stage].push(pg));
+
+    // Stage rings — color-coded by funnel stage
+    for(let stg=0;stg<6;stg++){
+      const ringR=radius*(.12+stg*.15);
+      const stgColor=FUNNELS[stg].color;
+      // Colored ring
+      ctx.beginPath();ctx.arc(cx,cy,ringR,0,Math.PI*2);
+      ctx.strokeStyle=stgColor+'40';ctx.lineWidth=isSingle?2:1.2;ctx.stroke();
+      // Light fill band
+      if(stg<5){
+        const nextR=radius*(.12+(stg+1)*.15);
+        ctx.beginPath();ctx.arc(cx,cy,ringR,0,Math.PI*2);ctx.arc(cx,cy,nextR,0,Math.PI*2,true);
+        ctx.fillStyle=stgColor+'08';ctx.fill();
+      }
+      // Label with stage color
+      ctx.font=`bold ${isSingle?'10':'8'}px system-ui`;ctx.fillStyle=stgColor;ctx.textAlign='left';
+      ctx.fillText(FUNNELS[stg].label,cx+ringR+6,cy+3);
+    }
+
+    // HHAHs
+    const hhPos=[];
+    sa.hhs.forEach((hh,hi)=>{
+      const ang=(hi/sa.hhs.length)*Math.PI*2-Math.PI/4;
+      const hr=radius*.92;
+      const hx=cx+Math.cos(ang)*hr,hy=cy+Math.sin(ang)*hr;
+      hhPos.push({x:hx,y:hy});
+      const sz=isSingle?10:7;
+      const col=hh.done?(hh.wfStep===6?'#db2777':'#16a34a'):hh.started?'#0891b2':'#94a3b8';
+      drawHouse(ctx,hx,hy,sz,col,hh.done?.9:hh.started?.8:.35);
+      // Always label agencies
+      ctx.font=`${isSingle?'9':'7'}px system-ui`;ctx.fillStyle='#475569';ctx.textAlign='center';
+      const label=hh.name.replace(' Home Health','').replace(' HH','');
+      ctx.fillText(label,hx,hy+sz+9);
+      if(hh.started&&!hh.done){
+        ctx.fillStyle='#0891b2';ctx.font='bold 7px system-ui';
+        ctx.fillText('⟳ '+STEP_NAMES[hh.wfStep],hx,hy+sz+18);
+      }
+    });
+
+    // PGs with connections
+    stageGroups.forEach((group,stg)=>{
+      if(!group.length)return;
+      const ringR=radius*(.12+stg*.15);
+      const sz=isSingle?(stg===0?4:stg<4?6:stg<5?8:10):(stg===0?3:stg<4?5:stg<5?6:8);
+      group.forEach((pg,gi)=>{
+        const ang=(gi/Math.max(group.length,1))*Math.PI*2-Math.PI/2;
+        const px=cx+Math.cos(ang)*ringR,py=cy+Math.sin(ang)*ringR;
+        // Connections
+        if(stg>=2&&pg.linkedHHs){
+          ctx.setLineDash([2,3]);ctx.lineWidth=.8;
+          pg.linkedHHs.forEach(idx=>{
+            if(idx<hhPos.length){ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(hhPos[idx].x,hhPos[idx].y);
+              ctx.strokeStyle=(vColors[pg.vert]||'#7c3aed')+'25';ctx.stroke();}
+          });ctx.setLineDash([]);
+        }
+        if(stg>=4){ctx.beginPath();ctx.arc(px,py,sz+4,0,Math.PI*2);ctx.fillStyle=stg===5?'rgba(22,163,74,.12)':'rgba(234,88,12,.12)';ctx.fill();}
+        drawCross(ctx,px,py,sz,STAGE_COLORS[stg],stg===0?.3:stg===1?.45:stg<4?.7:stg<5?.9:1);
+        // Label PG id in single view
+        if(isSingle&&stg>=2){ctx.font='7px system-ui';ctx.fillStyle='#64748b';ctx.textAlign='center';ctx.fillText('PG'+pg.id,px,py-sz-3);}
+      });
+    });
+  });
+
+  // Legend
+  const ly=H-16;ctx.font='10px system-ui';ctx.textAlign='left';let lx=14;
+  [{c:'#475569',l:'+ Physician Group',shape:'cross'},{c:'#475569',l:'⌂ Home Health Agency',shape:'house'}].forEach(it=>{
+    if(it.shape==='cross')drawCross(ctx,lx,ly,5,'#475569',1);else drawHouse(ctx,lx,ly,6,'#475569',.6);
+    ctx.fillStyle='#64748b';ctx.fillText(it.l,lx+10,ly+4);lx+=ctx.measureText(it.l).width+28;
+  });
+}
+
+function renderGrowth(VS){
+  VS=VS||S;const ctx=grX,dpr=window.devicePixelRatio||1,W=grC.width/dpr,H=grC.height/dpr;
+  ctx.clearRect(0,0,W,H);if(VS.growthHist.length<2)return;
+  const data=VS.growthHist,max=Math.max(1,...data.map(d=>FUNNELS.reduce((s,f)=>s+d[f.key],0)));
+  const keys=['closed','bofu','mofu','tofu','target','prospect'],cols=['#16a34a','#ea580c','#2563eb','#6366f1','#64748b','#94a3b8'];
+  keys.forEach((k,ki)=>{ctx.beginPath();ctx.moveTo(0,H);
+    data.forEach((d,i)=>{const x=(i/(data.length-1))*W;let cm=0;for(let j=0;j<=ki;j++)cm+=d[keys[j]];ctx.lineTo(x,H-(cm/max)*H);});
+    ctx.lineTo(W,H);ctx.closePath();ctx.fillStyle=cols[ki]+'30';ctx.fill();});
+}
+
+function renderNarration(focusWeek){
+  if(!narrDirty&&lastNarrCount===S.narration.length)return;
+  const el=document.getElementById('narrPanel');
+  const isLive=viewWeek<0;
+  const fw=typeof focusWeek==='number'?focusWeek:S.tick;
+  // Group by week
+  const byWeek={};
+  S.narration.forEach(n=>{if(!byWeek[n.tick])byWeek[n.tick]=[];byWeek[n.tick].push(n);});
+  const weeks=Object.keys(byWeek).map(Number).sort((a,b)=>b-a);
+  el.innerHTML=`<div class="narr-title">📋 ${isLive?'Simulation Log — Week 0 to '+S.tick:'Week '+fw+' Detail'}</div>`+
+    weeks.map(w=>{
+      const entries=byWeek[w];
+      const isFocused=w===fw;
+      return entries.map(n=>
+        `<div class="narr-entry ${n.type}" style="${isFocused?'border-width:3px;':''}${!isLive&&w!==fw?'opacity:.35;':''}" ${isFocused?'data-focused="1"':''}><span class="wk">Week ${w}</span>${n.text}</div>`
+      ).join('');
+    }).join('');
+  // Scroll to focused week
+  const focused=el.querySelector('[data-focused="1"]');
+  if(focused&&!isLive){focused.scrollIntoView({block:'start',behavior:'instant'});el.scrollTop-=30;}
+  else if(isLive)el.scrollTop=0;
+  narrDirty=false;lastNarrCount=S.narration.length;
+}
+
+function updateWFChips(VS){
+  VS=VS||S;let done=0,active=0,pending=0;
+  const sa=VS.sas[selSA];if(!sa)return;
+  sa.hhs.forEach(h=>{if(h.done)done++;else if(h.started)active++;else pending++;});
+  const el=document.getElementById('wfChips');
+  el.innerHTML=`
+    <div style="font-size:10px;font-weight:600;color:var(--td);margin-bottom:4px">${sa.name}</div>
+    <span class="wf-chip-sm"><span class="dot" style="background:var(--g)"></span>${done} Done</span>
+    <span class="wf-chip-sm"><span class="dot" style="background:var(--cy)"></span>${active} Active</span>
+    <span class="wf-chip-sm"><span class="dot" style="background:var(--tm)"></span>${pending} Pending</span>
+    <div style="font-size:9px;color:var(--tm);margin-top:4px">Phase: ${sa.status==='completed'?'✅ Complete':sa.status==='in_progress'?'⟳ Running':'○ Waiting'}</div>`;
+}
+
+// ── WF Graph (shared) ──
+function renderWFGraph(ctx,canvas,sa){
+  const dpr=window.devicePixelRatio||1,W=canvas.width/dpr,H=canvas.height/dpr;
+  if(W<10||H<10)return;ctx.clearRect(0,0,W,H);
+  const pad=12,gw=W-pad*2,gh=H-pad*2,tx=n=>pad+n*gw,ty=n=>pad+n*gh;
+  WARROWS.forEach(a=>{
+    const fn=WN[a.f],tn=WN[a.t];if(!fn||!tn)return;
+    const fx=tx(fn.x+fn.w/2),fy=ty(fn.y+fn.h/2),ex=tx(tn.x+tn.w/2),ey=ty(tn.y+tn.h/2);
+    ctx.beginPath();ctx.strokeStyle=sa.cN.has(a.f)?'rgba(22,163,74,.3)':sa.aN.has(a.f)?'rgba(8,145,178,.5)':'rgba(100,116,139,.15)';
+    ctx.lineWidth=1;if(a.style==='dashed')ctx.setLineDash([3,3]);else ctx.setLineDash([]);
+    if(a.curve==='up'){const m=Math.min(fy,ey)-12;ctx.moveTo(fx,fy);ctx.quadraticCurveTo(fx,m,ex,ey);}
+    else if(a.curve==='left-up'){ctx.moveTo(fx,fy);ctx.lineTo(tx(tn.x),fy);ctx.lineTo(tx(tn.x),ey);}
+    else if(a.curve==='up-right'){ctx.moveTo(fx,fy);ctx.lineTo(fx,ey);ctx.lineTo(ex,ey);}
+    else{ctx.moveTo(fx,fy);ctx.lineTo(ex,ey);}
+    ctx.stroke();ctx.setLineDash([]);
+    const ang=Math.atan2(ey-fy,ex-fx);ctx.beginPath();ctx.moveTo(ex,ey);ctx.lineTo(ex-4*Math.cos(ang-.3),ey-4*Math.sin(ang-.3));ctx.lineTo(ex-4*Math.cos(ang+.3),ey-4*Math.sin(ang+.3));ctx.closePath();ctx.fillStyle=ctx.strokeStyle;ctx.fill();
+    if(a.label){ctx.font='bold 7px system-ui';ctx.fillStyle=a.label==='No'||a.label==='None'?'rgba(219,39,119,.6)':'rgba(22,163,74,.6)';ctx.textAlign='center';ctx.fillText(a.label,(fx+ex)/2,(fy+ey)/2-3);}
+  });
+  sa.particles.forEach(p=>{
+    const fn=WN[p.from],tn=WN[p.to];if(!fn||!tn)return;
+    const px=tx(fn.x+fn.w/2)+(tx(tn.x+tn.w/2)-tx(fn.x+fn.w/2))*p.t;
+    const py=ty(fn.y+fn.h/2)+(ty(tn.y+tn.h/2)-ty(fn.y+fn.h/2))*p.t;
+    ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fillStyle=`rgba(8,145,178,${.3+.5*Math.sin(p.t*Math.PI)})`;ctx.fill();
+  });
+  Object.entries(WN).forEach(([id,n])=>{
+    const x=tx(n.x),y=ty(n.y),w=n.w*gw,h=n.h*gh;
+    const act=sa.aN.has(id),dn=sa.cN.has(id);
+    if(act){ctx.shadowColor=n.color;ctx.shadowBlur=8;}
+    ctx.beginPath();
+    if(n.shape==='diamond'){const cx2=x+w/2,cy2=y+h/2;ctx.moveTo(cx2,y);ctx.lineTo(x+w,cy2);ctx.lineTo(cx2,y+h);ctx.lineTo(x,cy2);ctx.closePath();}
+    else if(n.shape==='cylinder'){const ry=3;rRect(ctx,x,y+ry,w,h-ry*2,3);ctx.moveTo(x,y+ry);ctx.ellipse(x+w/2,y+ry,w/2,ry,0,Math.PI,0);ctx.moveTo(x+w,y+h-ry);ctx.ellipse(x+w/2,y+h-ry,w/2,ry,0,0,Math.PI);}
+    else rRect(ctx,x,y,w,h,n.shape==='dashed'||n.shape==='rect-pink'?3:5);
+    ctx.fillStyle=dn?'rgba(22,163,74,.05)':act?n.bg.replace(/[\d.]+\)$/,'.15)'):n.bg;ctx.fill();
+    ctx.strokeStyle=dn?'rgba(22,163,74,.4)':act?n.color:'rgba(100,116,139,.18)';ctx.lineWidth=act?1.5:1;
+    if(n.shape==='dashed')ctx.setLineDash([3,2]);ctx.stroke();ctx.setLineDash([]);
+    ctx.shadowColor='transparent';ctx.shadowBlur=0;
+    ctx.fillStyle=dn?'#16a34a':act?n.color:'#94a3b8';ctx.font=(act?'bold ':'')+'7px system-ui';ctx.textAlign='center';
+    n.label.split('\n').forEach((l,li,a)=>ctx.fillText(l,x+w/2,y+h/2-(a.length-1)*4+li*9));
+    if(dn){ctx.fillStyle='#16a34a';ctx.font='bold 8px system-ui';ctx.fillText('✓',x+w-4,y+6);}
+  });
+  // Phase labels
+  ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(100,116,139,.12)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(pad,ty(.50));ctx.lineTo(gw+pad,ty(.50));ctx.stroke();ctx.setLineDash([]);
+  ctx.font='bold 8px system-ui';ctx.fillStyle='#ea580c';ctx.textAlign='left';
+  ctx.fillText('PHASE 1: SA Market Analysis — Home Health, PG Density, Cultural',pad+4,ty(.01));
+  ctx.fillStyle='#16a34a';
+  ctx.fillText('PHASE 2: Customer Success — PG Onboarding (2.1–2.5) → HH Onboarding (2.6)',pad+4,ty(.53));
+}
+function rRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
+
+function getHHStatus(h){
+  if(h.done)return h.wfStep===6?{cls:'no-locs',label:'No Locs',icon:'✗'}:{cls:'done',label:'Done',icon:'✓'};
+  if(h.blocked)return{cls:'stuck',label:'Blocked',icon:'⊘'};
+  if(h.started)return{cls:'active',label:'Active',icon:'▸'};
+  return{cls:'pending',label:'Pending',icon:'○'};
+}
+
+// ── WFD ──
+// Original Workflow Detail renderer
+function renderWFDetail(VS){
+  VS=VS||S;const sa=VS.sas[selSA];if(!sa)return;
+  document.getElementById('wfdSaCards').innerHTML=VS.sas.map(s=>{
+    const hd=s.hhs.filter(h=>h.done).length,pct=s.hhs.length?Math.round(hd/s.hhs.length*100):0;
+    const col=s.status==='completed'?'var(--g)':s.status==='in_progress'?'var(--cy)':'var(--tm)';
+    return`<div class="wfd-sa-card" onclick="selSA=${s.id}" style="${s.id===selSA?'border-color:var(--cy)':''}"><div class="sa-name">${s.name}</div><div style="font-size:10px;color:var(--td)">${hd}/${s.hhs.length} · <span style="color:${col}">${s.status==='completed'?'✅ Complete':s.status==='in_progress'?'⟳ Running':'○ Waiting'}</span></div><div class="sa-prog-bar"><div class="sa-prog-fill" style="width:${pct}%;background:${col}"></div></div></div>`;
+  }).join('');
+  let done=0,active=0,pending=0;
+  sa.hhs.forEach(h=>{const st=getHHStatus(h);if(st.cls==='done'||st.cls==='no-locs')done++;else if(st.cls==='active'||st.cls==='stuck')active++;else pending++;});
+  document.getElementById('wfdKpi').innerHTML=`
+    <div class="wfd-kpi-card"><div class="kv" style="color:var(--cy)">${active}</div><div class="kl">Running</div></div>
+    <div class="wfd-kpi-card"><div class="kv" style="color:var(--g)">${done}</div><div class="kl">Done</div></div>
+    <div class="wfd-kpi-card"><div class="kv" style="color:var(--tm)">${pending}</div><div class="kl">Pending</div></div>`;
+  const taskCounts=[0,0,0,0];
+  sa.hhs.forEach(h=>{if(h.started&&!h.done)TASK_STEP_RANGES.forEach((r,ti)=>{if(h.wfStep>=r.min&&h.wfStep<=r.max)taskCounts[ti]++;});});
+  document.getElementById('wfdInstChips').innerHTML=TASK_STEP_RANGES.map((r,ti)=>
+    `<span class="wfd-inst-chip" style="${taskCounts[ti]?'border-color:var(--cy);color:var(--cy)':''}">${r.name}: <b>${taskCounts[ti]}</b></span>`).join('');
+  const rows=sa.hhs.filter(h=>h.started);
+  document.getElementById('wfdTbody').innerHTML=(rows.length?rows:sa.hhs.slice(0,5)).map(h=>{
+    const st=getHHStatus(h);
+    return`<tr><td style="font-weight:600;color:var(--t)">${h.name.replace(' Home Health','')}</td><td>${h.started?STEP_NAMES[h.wfStep]:'—'}</td><td><span class="status-badge ${st.cls}">${st.icon} ${st.label}</span></td><td style="font-variant-numeric:tabular-nums;font-size:9px">${h.started?(h.done?h.totalTicks+'w':h.stepTicks+'w'):'—'}</td></tr>`;
+  }).join('');
+  const curHH=sa.wfCur>=0&&sa.wfCur<sa.hhs.length?sa.hhs[sa.wfCur]:null;
+  const step=curHH?curHH.wfStep:0;
+  const taskRanges=[{min:1,max:3},{min:4,max:10},{min:11,max:12},{min:13,max:15}];
+  // SA tasks (first 4)
+  let taskHTML=TASKS_DEF.slice(0,4).map((task,ti)=>{
+    const range=taskRanges[ti],isActive=step>=range.min&&step<=range.max,isDone=step>range.max;
+    const cls=isActive?'active':isDone?'done':'';const icon=isDone?'<span style="color:var(--g)">✓</span>':isActive?'<span style="color:var(--cy)">▸</span>':'<span style="color:var(--tm)">○</span>';
+    return`<div class="task-card ${cls}"><div class="task-name">${icon} ${task.name}</div>${task.items.map((it,ii)=>{const d=step>range.min+ii,a=step===range.min+ii;return`<div class="task-item ${d?'done':a?'active':''}">${d?'✓':a?'▸':'·'} ${it}</div>`;}).join('')}${task.conds.map(c=>`<div class="task-cond ${c.type}">${c.type==='yes'?'✓':'✗'} ${c.text}</div>`).join('')}</div>`;
+  }).join('');
+  // CS tasks (tasks 5-10) — show status based on any active CS PG in this SA
+  const csPhaseOrder=['enrichment','signatures','rapport','baa','ehr','hh_identify'];
+  const csPGs=VS.pgs.filter(p=>p.saId===sa.id&&p.stage>=5&&p.cs.phase!=='idle');
+  const activeCS=csPGs.length?csPGs.find(p=>p.cs.phase!=='complete')||csPGs[0]:null;
+  const csIdx=activeCS?csPhaseOrder.indexOf(activeCS.cs.phase):-1;
+  taskHTML+=TASKS_DEF.slice(4).map((task,ti)=>{
+    const isDone=csIdx>ti||(!activeCS&&csPGs.some(p=>p.cs.phase==='complete'));
+    const isActive=csIdx===ti;
+    const cls=isActive?'active':isDone?'done':'';
+    const icon=isDone?'<span style="color:var(--g)">✓</span>':isActive?'<span style="color:var(--cy)">▸</span>':'<span style="color:var(--tm)">○</span>';
+    return`<div class="task-card ${cls}"><div class="task-name">${icon} ${task.name}</div>${task.items.map(it=>`<div class="task-item ${isDone?'done':isActive?'active':''}">${isDone?'✓':isActive?'▸':'·'} ${it}</div>`).join('')}${task.conds.map(c=>`<div class="task-cond ${c.type}">${c.type==='yes'?'✓':'✗'} ${c.text}</div>`).join('')}</div>`;
+  }).join('');
+  document.getElementById('wfdTaskPanel').innerHTML=taskHTML;
+}
+
+// Orchestrator renderer
+function renderOrchestrator(VS){
+  VS=VS||S;
+  // Collect ALL workflow instances
+  const instances=[];
+  // SA HHAH instances
+  VS.sas.forEach(sa=>sa.hhs.forEach((h,hi)=>{
+    const st=getHHStatus(h);
+    instances.push({id:`SA-${sa.abbr}-HH${hi+1}`,type:'SA: Home Health',entity:h.name.replace(' Home Health',''),action:h.started?STEP_NAMES[h.wfStep]:'—',
+      status:st.cls,statusLabel:st.label,statusIcon:st.icon,time:h.started?(h.done?h.totalTicks:h.stepTicks):0,
+      bottleneck:h.blocked?h.blockType:''});
+  }));
+  // CS Onboarding instances
+  VS.pgs.forEach(pg=>{
+    if(pg.stage<5)return;
+    const cs=pg.cs;if(cs.phase==='idle')return;
+    const isDone=cs.phase==='complete';
+    const isBlocked=cs.blocked;
+    const cls=isDone?'done':isBlocked?'stuck':'active';
+    const label=isDone?'Done':isBlocked?'Blocked':'Active';
+    const icon=isDone?'✓':isBlocked?'⊘':'▸';
+    instances.push({id:`CS-PG${pg.id}`,type:'CS: PG Onboarding',entity:`PG #${pg.id}`,action:CS_LABELS[cs.phase]||cs.phase,
+      status:cls,statusLabel:label,statusIcon:icon,time:S.tick-cs.tick,bottleneck:isBlocked?cs.blockType:''});
+    // CS HH sub-instances
+    if(cs.hhPhase!=='idle'&&cs.hhIdentified>0){
+      instances.push({id:`CS-PG${pg.id}-HH`,type:'CS: HH Outreach',entity:`PG #${pg.id} HHs`,
+        action:`${cs.hhOnboarded}/${cs.hhIdentified} onboarded`,
+        status:cs.hhDone||cs.phase==='complete'?'done':cs.hhBlocked>0?'stuck':'active',
+        statusLabel:cs.hhDone||cs.phase==='complete'?'Done':cs.hhBlocked>0?'Blocked':'Active',
+        statusIcon:cs.hhDone||cs.phase==='complete'?'✓':cs.hhBlocked>0?'⊘':'▸',
+        time:0,bottleneck:cs.hhBlocked>0?'hh_blocker':''});
+    }
+  });
+  // KPI snapshot
+  let running=0,completed=0,blocked=0,pending=0;
+  instances.forEach(i=>{if(i.status==='done')completed++;else if(i.status==='stuck')blocked++;else if(i.status==='active')running++;else pending++;});
+  const total=instances.length||1;
+  document.getElementById('orchSnap').innerHTML=`
+    <div class="wfd-kpi-card"><div class="kv">${instances.length}</div><div class="kl">Total Instances</div></div>
+    <div class="wfd-kpi-card"><div class="kv" style="color:var(--cy)">${running}</div><div class="kl">Running</div></div>
+    <div class="wfd-kpi-card"><div class="kv" style="color:var(--g)">${completed}</div><div class="kl">Completed</div></div>
+    <div class="wfd-kpi-card"><div class="kv" style="color:var(--pk)">${blocked}</div><div class="kl">Blocked</div></div>
+    <div class="wfd-kpi-card"><div class="kv" style="color:var(--tm)">${pending}</div><div class="kl">Pending</div></div>
+    <div class="wfd-kpi-card"><div class="kv" style="color:var(--g)">${Math.round(completed/total*100)}%</div><div class="kl">Complete</div></div>`;
+  // Instance table
+  document.getElementById('orchTable').innerHTML=instances.map(i=>
+    `<tr class="${i.status==='stuck'?'stuck':''}"><td style="font-weight:600;font-size:9px">${i.id}</td><td style="font-size:9px">${i.type}</td><td>${i.entity}</td><td>${i.action}</td><td><span class="status-badge ${i.status}">${i.statusIcon} ${i.statusLabel}</span></td><td style="font-variant-numeric:tabular-nums;font-size:9px">${i.time?i.time+'w':'—'}</td></tr>`
+  ).join('');
+  // Intelligence panel
+  const bottlenecks={};instances.forEach(i=>{if(i.bottleneck){bottlenecks[i.bottleneck]=(bottlenecks[i.bottleneck]||0)+1;}});
+  const sorted=Object.entries(bottlenecks).sort((a,b)=>b[1]-a[1]);
+  const typeCount={};instances.forEach(i=>{typeCount[i.type]=(typeCount[i.type]||0)+1;});
+  document.getElementById('orchIntel').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>
+        <div style="font-size:9px;font-weight:700;color:var(--pk);margin-bottom:4px">Top Bottlenecks</div>
+        ${sorted.length?sorted.map(([k,v])=>`<div class="ct-bar-row"><span class="bl">${k.replace(/_/g,' ')}</span><div class="bw"><div class="bf" style="width:${v/Math.max(blocked,1)*100}%;background:var(--pk)"></div></div><span class="bv">${v}</span></div>`).join(''):'<div style="font-size:9px;color:var(--tm)">No bottlenecks detected</div>'}
+      </div>
+      <div>
+        <div style="font-size:9px;font-weight:700;color:var(--bl);margin-bottom:4px">Workflow Distribution</div>
+        ${Object.entries(typeCount).map(([k,v])=>`<div class="ct-bar-row"><span class="bl">${k}</span><div class="bw"><div class="bf" style="width:${v/total*100}%;background:var(--bl)"></div></div><span class="bv">${v}</span></div>`).join('')}
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:9px;font-weight:700;color:var(--td)">Recommendations</div>
+    <div style="font-size:9px;color:var(--td);line-height:1.5">
+      ${blocked>0?`<div>• <b>${blocked}</b> instance(s) blocked. ${sorted[0]?'Top cause: <b>'+sorted[0][0].replace(/_/g,' ')+'</b> ('+sorted[0][1]+' instances).':''}</div>`:''}
+      ${running>0?`<div>• <b>${running}</b> workflow(s) actively processing. Throughput: ${VS.tick>0?(completed/VS.tick).toFixed(1):'0'} completions/week.</div>`:''}
+      ${completed===total&&total>0?'<div>• All workflows complete. No action needed.</div>':''}
+      ${total===0?'<div>• No workflows running yet. Waiting for PGs to reach BOFU.</div>':''}
+    </div>`;
+}
+
+// ── CONTROL TOWER ──
+function buildCTVars(){
+  const el=document.getElementById('ctVars');
+  const groups={};VAR_REGISTRY.forEach((v,i)=>{if(!groups[v.group])groups[v.group]=[];groups[v.group].push({...v,idx:i});});
+  el.innerHTML=Object.entries(groups).map(([g,vars])=>
+    `<div class="ct-group"><div class="ct-group-title">${g}</div>${vars.map(v=>
+      `<div class="ct-var"><label>${v.name}${v.structural?'<span class="ct-reset-flag" style="display:none" id="rf_${v.idx}">Reset needed</span>':''}</label><input type="number" value="${v.value}" min="${v.min}" max="${v.max}" step="${v.step}" data-idx="${v.idx}"><span class="unit">${v.step<1?'%':''}</span></div>`
+    ).join('')}</div>`
+  ).join('');
+  el.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('change',e=>{
+      const idx=+e.target.dataset.idx;const v=VAR_REGISTRY[idx];
+      v.value=+e.target.value;
+      if(v.structural){needsReset=true;const rf=document.getElementById('rf_'+idx);if(rf)rf.style.display='inline';}
+      narrDirty=true;buildCTFormulas();renderAll();
+    });
+  });
+}
+
+function buildCTFormulas(){
+  const el=document.getElementById('ctFormulas');if(!el)return;
+  const pops=[V('pop_dallas'),V('pop_chicago')];
+  const formulas=[];
+  SA_DEFS.forEach((d,i)=>{
+    const p=pops[i];const phys=p*(V('physicians_per_1000')/1000);const pgs=p*(V('pg_per_million')/1e6);const hhs=p*(V('hh_per_million')/1e6);
+    formulas.push({f:`Physicians (${d.abbr}) = ${(p/1e6).toFixed(1)}M × ${V('physicians_per_1000')}/1000`,v:Math.round(phys)});
+    formulas.push({f:`PGs (${d.abbr}) = ${(p/1e6).toFixed(1)}M × ${V('pg_per_million')}/1M`,v:Math.round(pgs)});
+    formulas.push({f:`Home Healths (${d.abbr}) = ${(p/1e6).toFixed(1)}M × ${V('hh_per_million')}/1M`,v:Math.round(hhs)});
+  });
+  formulas.push({f:'CHC = PGs × 10%',v:'10%'});
+  formulas.push({f:'Housecall = PGs × 3%',v:'3%'});
+  formulas.push({f:'VA = PGs × 1%',v:'1%'});
+  formulas.push({f:'Independent = PGs × 20%',v:'20%'});
+  const rates=getRates();
+  FUNNELS.slice(0,5).forEach((f,i)=>{formulas.push({f:`${f.label} → ${FUNNELS[i+1].label} = ${Math.round(rates[i]*100)}%/week`,v:(rates[i]*100).toFixed(0)+'%'});});
+  formulas.push({f:'NextStage(t+1) = CurrentStage(t) × ConversionRate',v:'—'});
+  formulas.push({f:'DropOff = CurrentStage - NextStage',v:'—'});
+  formulas.push({f:'Coverage = Completed / Total',v:'—'});
+  formulas.push({f:'SuccessRate = Completed / TotalInstances',v:'—'});
+  el.innerHTML=formulas.map(f=>`<div class="ct-formula"><span>${f.f}</span><span class="fv">${f.v}</span></div>`).join('');
+}
+
+function renderCT(VS){
+  VS=VS||S;
+  // Funnel metrics
+  const pgC=Array(6).fill(0);VS.pgs.forEach(p=>pgC[p.stage]++);
+  const rates=getRates();
+  document.getElementById('ctFunnel').innerHTML=`
+    <div class="ct-metric">${FUNNELS.map((f,i)=>`<div class="ct-card"><div class="cv" style="color:${f.color}">${pgC[i]}</div><div class="cl">${f.icon} ${f.label}</div></div>`).join('')}</div>
+    <div class="section-title" style="font-size:8px">Conversion Rates (per week)</div>
+    ${FUNNELS.slice(0,5).map((f,i)=>{const actual=pgC[i]>0?Math.min(1,pgC[i+1]/(pgC[i]+pgC[i+1]+.001)):0;
+      return`<div class="ct-bar-row"><span class="bl">${f.label}→${FUNNELS[i+1].label}</span><div class="bw"><div class="bf" style="width:${rates[i]*100}%;background:${f.color}"></div></div><span class="bv">${Math.round(rates[i]*100)}%</span></div>`;
+    }).join('')}
+    <div class="section-title" style="font-size:8px;margin-top:6px">Drop-offs</div>
+    ${FUNNELS.slice(0,5).map((f,i)=>{const drop=pgC[i]>0?pgC[i]-Math.round(pgC[i]*rates[i]):0;
+      return`<div class="ct-bar-row"><span class="bl">${f.label}</span><div class="bw"><div class="bf" style="width:${pgC[i]>0?(drop/pgC[i]*100):0}%;background:var(--pk)"></div></div><span class="bv">${drop}</span></div>`;
+    }).join('')}`;
+
+  // Workflow metrics
+  let wDone=0,wActive=0,wBlocked=0,wPending=0,wNoLocs=0,blockTypes={data_missing:0,structure_uncertain:0,no_contacts:0};
+  VS.sas.forEach(sa=>sa.hhs.forEach(h=>{
+    if(h.done){h.wfStep===6?wNoLocs++:wDone++;}
+    else if(h.blocked){wBlocked++;if(blockTypes[h.blockType]!==undefined)blockTypes[h.blockType]++;}
+    else if(h.started)wActive++;else wPending++;
+  }));
+  const totalInst=wDone+wActive+wBlocked+wPending+wNoLocs;
+  const successRate=totalInst>0?((wDone/(totalInst-wPending))*100||0):0;
+  document.getElementById('ctWorkflow').innerHTML=`
+    <div class="ct-metric">
+      <div class="ct-card"><div class="cv" style="color:var(--cy)">${wActive}</div><div class="cl">Running</div></div>
+      <div class="ct-card"><div class="cv" style="color:var(--pk)">${wBlocked}</div><div class="cl">Blocked</div></div>
+      <div class="ct-card"><div class="cv" style="color:var(--g)">${wDone}</div><div class="cl">Completed</div></div>
+      <div class="ct-card"><div class="cv" style="color:var(--tm)">${wPending}</div><div class="cl">Pending</div></div>
+    </div>
+    ${wBlocked?`<div class="section-title" style="font-size:8px">Block Breakdown</div>
+      ${Object.entries(blockTypes).filter(([,v])=>v>0).map(([k,v])=>`<div class="ct-bar-row"><span class="bl">${k.replace(/_/g,' ')}</span><div class="bw"><div class="bf" style="width:${(v/Math.max(wBlocked,1))*100}%;background:var(--pk)"></div></div><span class="bv">${v}</span></div>`).join('')}`:''}
+    <div class="ct-bar-row" style="margin-top:6px"><span class="bl">Success Rate</span><div class="bw"><div class="bf" style="width:${Math.min(successRate,100)}%;background:var(--g)"></div></div><span class="bv">${Math.round(successRate)}%</span></div>`;
+
+  // SA metrics
+  document.getElementById('ctSA').innerHTML=VS.sas.map(sa=>{
+    const hd=sa.hhs.filter(h=>h.done).length;const pct=sa.hhs.length?Math.round(hd/sa.hhs.length*100):0;
+    const col=sa.status==='completed'?'var(--g)':sa.status==='in_progress'?'var(--cy)':'var(--tm)';
+    return`<div class="ct-sa-card"><div class="sa-hdr"><span>${sa.name}</span><span style="color:${col};font-size:9px">${sa.status==='completed'?'✅ Complete':sa.status==='in_progress'?'⟳ Running':'○ Waiting'}</span></div>
+      <div class="sa-prog-bar" style="height:4px;background:rgba(0,0,0,.06);border-radius:2px;margin:4px 0"><div class="sa-prog-fill" style="width:${pct}%;background:${col};height:100%;border-radius:2px"></div></div>
+      <div class="ct-checklist">
+        <div>${sa.hhs.every(h=>h.done)?'✅':'○'} Home Health Coverage: ${hd}/${sa.hhs.length} (${pct}%)</div>
+        <div>${sa.subWf.pg===2?'✅':'○'} PG Market Analysis</div>
+        <div>${sa.subWf.cultural===2?'✅':'○'} Cultural Market Analysis</div>
+      </div></div>`;
+  }).join('');
+
+  // System metrics
+  const totalHH=VS.sas.reduce((s,sa)=>s+sa.hhs.length,0);
+  const doneHH=VS.sas.reduce((s,sa)=>s+sa.hhs.filter(h=>h.done).length,0);
+  const coverage=totalHH>0?Math.round(doneHH/totalHH*100):0;
+  const throughput=VS.tick>0?(doneHH/VS.tick).toFixed(1):'0';
+  const bottleneck=Object.entries(blockTypes).sort((a,b)=>b[1]-a[1])[0];
+  const sasDone=VS.sas.filter(s=>s.status==='completed').length;
+  document.getElementById('ctSystem').innerHTML=`
+    <div class="ct-metric">
+      <div class="ct-card"><div class="cv" style="color:var(--bl)">${throughput}</div><div class="cl">HH/Week</div></div>
+      <div class="ct-card"><div class="cv" style="color:var(--g)">${coverage}%</div><div class="cl">Coverage</div></div>
+      <div class="ct-card"><div class="cv" style="color:var(--o)">${sasDone}/${VS.sas.length}</div><div class="cl">SAs Done</div></div>
+      <div class="ct-card"><div class="cv" style="color:var(--pk)">${bottleneck&&bottleneck[1]>0?bottleneck[1]:'0'}</div><div class="cl">${bottleneck&&bottleneck[1]>0?bottleneck[0].replace(/_/g,' '):'No Bottleneck'}</div></div>
+    </div>`;
+}
+
+function initControls(){
+  document.getElementById('btnPlay').onclick=()=>{
+    S.running=!S.running;
+    if(S.running)viewWeek=-1; // Go live when playing
+    document.getElementById('btnPlay').innerHTML=S.running?'&#9646;&#9646; Pause':'&#9654; Play';
+    document.getElementById('btnPlay').classList.toggle('on',S.running);
+  };
+  document.getElementById('btnStep').onclick=()=>{
+    if(!S.running){viewWeek=-1;simTick();renderAll();}
+  };
+  document.getElementById('btnReset').onclick=()=>{
+    S.running=false;viewWeek=-1;snapshots=[];
+    document.getElementById('btnPlay').innerHTML='&#9654; Play';document.getElementById('btnPlay').classList.remove('on');
+    initSim();buildFunnel();buildVerts();saveSnapshot();renderAll();
+  };
+  document.getElementById('btnPrev').onclick=()=>{
+    if(S.running)return;
+    const maxW=S.tick;
+    if(viewWeek<0)viewWeek=maxW; // Start from current
+    if(viewWeek>0)viewWeek--;
+    narrDirty=true;renderAll();
+  };
+  document.getElementById('btnNext').onclick=()=>{
+    if(S.running)return;
+    if(viewWeek<0)return;
+    if(viewWeek<S.tick){viewWeek++;if(viewWeek>=S.tick)viewWeek=-1;}
+    narrDirty=true;renderAll();
+  };
+  document.getElementById('btnLive').onclick=()=>{viewWeek=-1;narrDirty=true;renderAll();};
+  document.getElementById('speedSlider').oninput=e=>{S.speed=+e.target.value;document.getElementById('speedVal').textContent=S.speed+'x';};
+  document.querySelectorAll('.top-tab').forEach(t=>t.addEventListener('click',()=>switchView(t.dataset.v)));
+}
+function switchView(v){curView=v;document.querySelectorAll('.top-tab').forEach(t=>t.classList.toggle('on',t.dataset.v===v));document.querySelectorAll('.vw').forEach(el=>el.classList.remove('on'));document.getElementById('v-'+v).classList.add('on');setTimeout(resizeAll,20);}
+function renderAll(){
+  const isLive=viewWeek<0;
+  const VS=getViewState(); // View state (snapshot or live)
+  const vw=isLive?S.tick:viewWeek;
+
+  document.getElementById('weekNum').textContent=S.tick;document.getElementById('weekBadge').textContent='Week '+S.tick;
+  document.getElementById('sasDone').textContent=S.sas.filter(s=>s.status==='completed').length+'/2';
+  const anyIP=S.sas.some(s=>s.status==='in_progress'),allDone=S.sas.every(s=>s.status==='completed');
+  document.getElementById('phaseBadge').textContent=allDone?'Phase: Complete':anyIP?'Phase: Workflow Active':'Phase: Acquisition';
+
+  // Week nav controls
+  document.getElementById('viewLabel').textContent=isLive?`Week ${S.tick} (LIVE)`:`Viewing Week ${viewWeek} of ${S.tick}`;
+  document.getElementById('viewLabel').style.color=isLive?'var(--g)':'var(--o)';
+  document.getElementById('btnPrev').disabled=S.running||(viewWeek===0);
+  document.getElementById('btnNext').disabled=S.running||isLive;
+  document.getElementById('btnLive').classList.toggle('live-on',isLive);
+  document.querySelector('.sim-canvas-wrap').classList.toggle('viewing-past',!isLive);
+  document.querySelector('.sim-canvas-wrap').setAttribute('data-vw',viewWeek);
+
+  updateSummaryBar(VS);
+  if(curView==='sim'){updateFunnel(VS);updateVerts(VS);renderMap(VS);renderGrowth(VS);renderNarration(vw);updateWFChips(VS);}
+  else if(curView==='wfd'){renderWFDetail(VS);renderWFGraph(wfdX,wfdC,VS.sas[selSA]);}
+  else if(curView==='orch'){renderOrchestrator(VS);}
+  else if(curView==='ct'){renderCT(VS);}
+}
+let lastFrame=0;
+function gameLoop(ts){if(S.running){const interval=1000/S.speed;if(ts-lastFrame>=interval){simTick();lastFrame=ts;}}renderAll();requestAnimationFrame(gameLoop);}
+initSim();saveSnapshot();initRendering();initControls();buildCTVars();buildCTFormulas();renderAll();requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
