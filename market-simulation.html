@@ -243,8 +243,8 @@ canvas{display:block}
       </div>
       <div class="auth-field">
         <label>Email</label>
-        <input type="email" id="authEmail" placeholder="you@eonexia.com" autocomplete="email">
-        <div class="field-hint" id="emailHint">Only @eonexia.com addresses are allowed</div>
+        <input type="email" id="authEmail" placeholder="you@eonexea.com" autocomplete="email">
+        <div class="field-hint" id="emailHint">Only @eonexea.com addresses are allowed</div>
         <div class="field-error" id="emailError"></div>
       </div>
       <div class="auth-field">
@@ -403,7 +403,7 @@ canvas{display:block}
 const AUTH={
   STORAGE_KEY:'eonexia_users',
   SESSION_KEY:'eonexia_session',
-  DOMAIN:'eonexia.com',
+  DOMAIN:'eonexea.com',
   getUsers(){try{return JSON.parse(localStorage.getItem(this.STORAGE_KEY))||[];}catch{return[];}},
   saveUsers(u){localStorage.setItem(this.STORAGE_KEY,JSON.stringify(u));},
   getSession(){try{return JSON.parse(localStorage.getItem(this.SESSION_KEY));}catch{return null;}},
