@@ -229,6 +229,22 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 /* Scrollbar */
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
 canvas{display:block}
+
+/* ── GUIDED UX ── */
+.help-hint{font-size:11px;color:var(--tm);font-weight:400;font-style:italic;margin-top:2px;line-height:1.4}
+.section-title .hint{font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--tm);margin-left:6px;font-style:italic}
+.tooltip-wrap{position:relative;display:inline-flex;align-items:center;cursor:help}
+.tooltip-wrap .tip-icon{width:16px;height:16px;border-radius:50%;background:var(--c);border:1px solid var(--b);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--tm);margin-left:6px;flex-shrink:0}
+.tooltip-wrap .tip-text{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1a2332;color:#fff;padding:8px 12px;border-radius:8px;font-size:11px;font-weight:400;font-style:normal;white-space:normal;width:240px;line-height:1.5;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.2);text-transform:none;letter-spacing:0}
+.tooltip-wrap:hover .tip-text{display:block}
+.tooltip-wrap .tip-text::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#1a2332}
+.nav-hint{font-size:10px;color:var(--tm);padding:4px 14px 8px;line-height:1.4;font-style:italic}
+.step-indicator{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:8px;background:rgba(37,99,235,.06);color:var(--bl);font-size:10px;font-weight:700;margin-bottom:6px}
+.why-box{background:rgba(37,99,235,.04);border:1px solid rgba(37,99,235,.12);border-radius:8px;padding:8px 12px;margin:8px 0;font-size:11px;color:var(--td);line-height:1.5}
+.why-box b{color:var(--bl);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.guide-banner{background:linear-gradient(135deg,rgba(37,99,235,.06),rgba(124,58,237,.04));border:1px solid rgba(37,99,235,.12);border-radius:var(--radius);padding:12px 16px;margin-bottom:10px;font-size:12px;color:var(--td);line-height:1.6}
+.guide-banner b{color:var(--bl)}
+.guide-banner .analogy{font-style:italic;color:var(--tm);margin-top:4px;font-size:11px}
 </style>
 </head>
 <body>
@@ -238,7 +254,7 @@ canvas{display:block}
   <div class="auth-card">
     <div class="auth-logo">
       <h1>eon<span>exia</span></h1>
-      <p>Market Growth & Workflow Simulation Engine</p>
+      <p>Market Growth & Workflow Simulation Engine<br><span style="font-size:11px;color:#8494a7">See how doctor groups join your network, step by step</span></p>
     </div>
     <div class="auth-tabs">
       <div class="auth-tab active" data-mode="login">Sign In</div>
@@ -274,21 +290,27 @@ canvas{display:block}
     </div>
     <div class="sidebar-nav">
       <div class="nav-section">Views</div>
+      <div class="nav-hint">Choose a view to explore different parts of the system</div>
       <div class="nav-item active" data-v="sim">
-        <span class="nav-icon">📊</span>Simulation
+        <span class="nav-icon">📊</span>
+        <div>Simulation<div class="help-hint">Watch doctors join the network</div></div>
         <span class="nav-badge" id="navWeek">W0</span>
       </div>
       <div class="nav-item" data-v="wfd">
-        <span class="nav-icon">🔧</span>Workflow Detail
+        <span class="nav-icon">🔧</span>
+        <div>Workflow Detail<div class="help-hint">See each step being worked on</div></div>
       </div>
       <div class="nav-item" data-v="orch">
-        <span class="nav-icon">🎯</span>Orchestrator
+        <span class="nav-icon">🎯</span>
+        <div>Orchestrator<div class="help-hint">Overview of all running tasks</div></div>
         <span class="nav-badge" id="navInstances">0</span>
       </div>
       <div class="nav-item" data-v="ct">
-        <span class="nav-icon">🏗</span>Control Tower
+        <span class="nav-icon">🏗</span>
+        <div>Control Tower<div class="help-hint">Adjust settings & see metrics</div></div>
       </div>
-      <div class="nav-section" style="margin-top:16px">Statistical Areas</div>
+      <div class="nav-section" style="margin-top:16px">Statistical Areas <span style="font-weight:400;text-transform:none;letter-spacing:0">(metro regions)</span></div>
+      <div class="nav-hint">Click a region to see its details on the map</div>
       <div id="navSAList"></div>
     </div>
     <div class="sidebar-footer">
@@ -320,19 +342,19 @@ canvas{display:block}
         </div>
         <div class="sim-stats">
           <div>
-            <div class="section-title">Acquisition Funnel</div>
+            <div class="section-title">Acquisition Funnel <span class="hint">(how doctors move through stages)</span></div>
             <div id="funnelBox"></div>
           </div>
           <div>
-            <div class="section-title">Verticals</div>
+            <div class="section-title">Verticals <span class="hint">(types of doctor groups)</span></div>
             <div id="vertBox"></div>
           </div>
           <div>
-            <div class="section-title">Growth</div>
+            <div class="section-title">Growth <span class="hint">(progress over time)</span></div>
             <div class="growth-wrap"><canvas id="growthCanvas"></canvas></div>
           </div>
           <div>
-            <div class="section-title">Workflow Status</div>
+            <div class="section-title">Workflow Status <span class="hint">(what's being processed)</span></div>
             <div class="wf-chip-wrap" id="wfChips"></div>
           </div>
         </div>
@@ -346,12 +368,12 @@ canvas{display:block}
         <div class="wfd-graph-wrap"><canvas id="wfdCanvas"></canvas></div>
         <div class="wfd-bottom">
           <div>
-            <div class="section-title">Running Instances</div>
+            <div class="section-title">Running Instances <span class="hint">(each agency being analyzed right now)</span></div>
             <div class="wfd-instance-chips" id="wfdInstChips"></div>
-            <table class="hh-tbl"><thead><tr><th>HHAH</th><th>Current Action</th><th>Status</th><th>Time</th></tr></thead><tbody id="wfdTbody"></tbody></table>
+            <table class="hh-tbl"><thead><tr><th>Home Health Agency</th><th>What's Happening</th><th>Status</th><th>Time Spent</th></tr></thead><tbody id="wfdTbody"></tbody></table>
           </div>
           <div>
-            <div class="section-title">Task Detail</div>
+            <div class="section-title">Task Detail <span class="hint">(click any task to see its steps)</span></div>
             <div id="wfdTaskPanel"></div>
           </div>
         </div>
@@ -359,49 +381,61 @@ canvas{display:block}
       <!-- ORCHESTRATOR VIEW -->
       <div class="vw wfd-view" id="v-orch">
         <div class="wfd-top">
-          <div style="flex:1"><div class="wfd-kpi" id="orchSnap"></div></div>
+          <div style="flex:1">
+            <div class="guide-banner" id="orchGuide">
+              <b>Orchestrator</b> (the system that manages all tasks at once)<br>
+              Think of it like a school principal checking on every classroom. This view shows every task running across all areas — who's working, who's stuck, and who's done.
+              <div class="analogy">Analogy: Like a delivery app dashboard showing every driver, order, and delay at once.</div>
+            </div>
+            <div class="wfd-kpi" id="orchSnap"></div>
+          </div>
         </div>
         <div style="flex:1;overflow-y:auto;padding:12px 16px;min-height:0">
-          <div class="section-title">All Workflow Instances</div>
-          <table class="hh-tbl"><thead><tr><th>ID</th><th>Type</th><th>Entity</th><th>Current Action</th><th>Status</th><th>Time</th></tr></thead><tbody id="orchTable"></tbody></table>
+          <div class="section-title">All Workflow Instances <span class="hint">(every task the system is tracking)</span></div>
+          <table class="hh-tbl"><thead><tr><th>Task ID</th><th>What Kind</th><th>Who / What</th><th>What's Happening Now</th><th>Status</th><th>Time</th></tr></thead><tbody id="orchTable"></tbody></table>
         </div>
         <div style="max-height:200px;overflow-y:auto;padding:12px 16px;border-top:1px solid var(--b)">
-          <div class="section-title">Intelligence & Bottlenecks</div>
+          <div class="section-title">Intelligence & Bottlenecks <span class="hint">(what's slowing things down)</span></div>
           <div id="orchIntel"></div>
         </div>
       </div>
       <!-- CONTROL TOWER -->
       <div class="vw ct-view" id="v-ct">
         <div>
-          <div class="section-title">Variable Registry</div>
+          <div class="guide-banner">
+            <b>Control Tower</b> (your settings & dials)<br>
+            This is where you tune the simulation. Change any number on the left, and watch the results update on the right in real-time.
+            <div class="analogy">Analogy: Like adjusting difficulty settings in a game — change the rules and see what happens.</div>
+          </div>
+          <div class="section-title">Variable Registry <span class="hint">(the numbers you can change)</span></div>
           <div id="ctVars"></div>
-          <div class="section-title" style="margin-top:14px">Formula Engine</div>
+          <div class="section-title" style="margin-top:14px">Formula Engine <span class="hint">(how the numbers are calculated)</span></div>
           <div id="ctFormulas"></div>
         </div>
         <div>
-          <div class="section-title">Funnel Metrics</div>
+          <div class="section-title">Funnel Metrics <span class="hint">(how many doctors are at each stage)</span></div>
           <div id="ctFunnel"></div>
-          <div class="section-title">Workflow Metrics</div>
+          <div class="section-title">Workflow Metrics <span class="hint">(how the analysis tasks are going)</span></div>
           <div id="ctWorkflow"></div>
-          <div class="section-title">SA Metrics</div>
+          <div class="section-title">SA Metrics <span class="hint">(progress for each metro region)</span></div>
           <div id="ctSA"></div>
-          <div class="section-title">System Metrics</div>
+          <div class="section-title">System Metrics <span class="hint">(overall system health)</span></div>
           <div id="ctSystem"></div>
         </div>
       </div>
     </div>
     <div class="ftr">
-      <button id="btnPlay">&#9654; Play</button>
-      <button id="btnStep" title="Advance one week">Next Week &#9654;</button>
-      <button id="btnReset">Reset</button>
+      <button id="btnPlay" title="Start or pause the simulation — it will run week by week automatically">&#9654; Play</button>
+      <button id="btnStep" title="Move forward by exactly one week — good for watching step by step">Step +1 Week</button>
+      <button id="btnReset" title="Start the entire simulation over from the beginning">Reset</button>
       <div class="ftr-sep"></div>
-      <button id="btnPrev" title="View previous week">&#9664; Prev</button>
+      <button id="btnPrev" title="Go back and look at what happened in a previous week">&#9664; Prev Week</button>
       <span id="viewLabel" style="font-size:12px;font-weight:600;color:var(--td);min-width:120px;text-align:center">Week 0</span>
-      <button id="btnNext" title="View next week">Next &#9654;</button>
-      <button id="btnLive" title="Jump to current week" style="font-size:11px">&#9679; LIVE</button>
+      <button id="btnNext" title="Go forward to see the next week's results">Next Week &#9654;</button>
+      <button id="btnLive" title="Jump back to the current live week" style="font-size:11px">&#9679; LIVE</button>
       <div class="ftr-sep"></div>
-      <div class="speed-ctl"><label>Speed</label><input type="range" id="speedSlider" min="1" max="10" value="3"><span id="speedVal" style="font-size:12px;color:var(--td)">3x</span></div>
-      <div class="ftr-info">Week <b id="weekNum">0</b> &middot; SAs <b id="sasDone">0/2</b></div>
+      <div class="speed-ctl"><label title="How fast the simulation runs when playing">Speed</label><input type="range" id="speedSlider" min="1" max="10" value="3"><span id="speedVal" style="font-size:12px;color:var(--td)">3x</span></div>
+      <div class="ftr-info">Week <b id="weekNum">0</b> &middot; Regions <b id="sasDone">0/2</b> done</div>
     </div>
   </div>
 </div>
@@ -724,7 +758,7 @@ function initSim(){
   }
   S={tick:0,running:false,speed:3,sas,pgs,events:[],wfRuns:0,narration:[],
     growthHist:[{tick:0,...Object.fromEntries(FUNNELS.map(f=>[f.key,f.key==='prospect'?pgs.length:0]))}]};
-  addNarr('highlight',`<b>Simulation initialized.</b> Modeling acquisition of <b>${pgs.length} physician groups (PGs)</b> across ${sas.length} statistical areas (${sas.map(s=>s.name+' — '+(s.pop/1e6).toFixed(1)+'M pop, '+s.totalPGs+' PGs, '+s.totalHHs+' home healths').join('; ')}).<br><br><b>Acquisition channels:</b> Website, Conferences, Emails, Marketing, Branding.<br><b>Funnel stages:</b> Prospect → Target → TOFU → MOFU → BOFU → Closed.<br><b>Conversion rates:</b> TOFU→MOFU: 60%, MOFU→BOFU: 60%, BOFU→Close: 80%.<br><b>Ratio:</b> ~3 PGs per 1 Home Health Agency.<br><b>Trigger:</b> When a PG reaches BOFU, it activates the SA workflow — Home Health Market Analysis, PG Market Analysis, and Cultural Market Analysis run in parallel.<br><br>Press <b>Play</b> to begin.`);
+  addNarr('highlight',`<b>Simulation ready!</b> Think of this like a <i>sports recruitment game</i> — we're trying to sign up <b>${pgs.length} doctor groups (PGs)</b> across ${sas.length} regions.<br><br><div class="why-box"><b>How it works:</b> Doctor groups move through a pipeline, like a funnel. They start as <b>Prospects</b> [we just know about them], then become <b>Targets</b> [we want them], move through <b>TOFU</b> [first contact], <b>MOFU</b> [getting interested], <b>BOFU</b> [almost ready], and finally <b>Closed</b> [they signed up!].</div><br><b>Our regions:</b> ${sas.map(s=>s.name+' — '+(s.pop/1e6).toFixed(1)+'M people, '+s.totalPGs+' doctor groups, '+s.totalHHs+' home health agencies').join('; ')}.<br><br><b>How we find them:</b> Website, Conferences, Emails, Marketing, Branding.<br><b>Success rates:</b> About 60% move from TOFU→MOFU, 60% from MOFU→BOFU, and 80% from BOFU→Closed.<br><b>What happens next:</b> When a doctor group reaches BOFU [almost ready], it triggers research tasks — analyzing home health agencies, other doctor groups, and the local culture of each area.<br><br>Press <b>Play</b> to start watching it happen!`);
 }
 
 let narrDirty=true,lastNarrCount=0;
@@ -1076,16 +1110,16 @@ function updateSummaryBar(VS){
   let hhD=0,hhA=0,hhP=0,hhT=0,hhB=0;
   VS.sas.forEach(sa=>sa.hhs.forEach(h=>{hhT++;if(h.done)hhD++;else if(h.blocked)hhB++;else if(h.started)hhA++;else hhP++;}));
   document.getElementById('summaryBar').innerHTML=`
-    <div class="sum-group"><span class="sum-label">PGs</span>${FUNNELS.map((f,i)=>`<span class="sum-chip" style="border-color:${f.color}30">${f.icon} <span class="cnt" style="color:${f.color}">${pgC[i]}</span></span>`).join('')}</div>
+    <div class="sum-group"><span class="sum-label">PGs [Doctor Groups]</span>${FUNNELS.map((f,i)=>`<span class="sum-chip" style="border-color:${f.color}30">${f.icon} <span class="cnt" style="color:${f.color}">${pgC[i]}</span></span>`).join('')}</div>
     <div class="sum-divider"></div>
-    <div class="sum-group"><span class="sum-label">HH</span>
+    <div class="sum-group"><span class="sum-label">HH [Home Health]</span>
       <span class="sum-chip"><span class="cnt">${hhT}</span> Total</span>
       <span class="sum-chip" style="border-color:rgba(5,150,105,.3)"><span class="cnt" style="color:var(--g)">${hhD}</span> Done</span>
       <span class="sum-chip" style="border-color:rgba(8,145,178,.3)"><span class="cnt" style="color:var(--cy)">${hhA}</span> Active</span>
-      ${hhB?`<span class="sum-chip" style="border-color:rgba(214,51,108,.3)"><span class="cnt" style="color:var(--pk)">${hhB}</span> Blocked</span>`:''}
+      ${hhB?`<span class="sum-chip" style="border-color:rgba(214,51,108,.3)"><span class="cnt" style="color:var(--pk)">${hhB}</span> Stuck</span>`:''}
     </div>
     <div class="sum-divider"></div>
-    <div class="sum-group"><span class="sum-label">SAs</span>${VS.sas.map(sa=>{
+    <div class="sum-group"><span class="sum-label">SAs [Service Areas]</span>${VS.sas.map(sa=>{
       const col=sa.status==='completed'?'var(--g)':sa.status==='in_progress'?'var(--cy)':'var(--tm)';
       const ic=sa.status==='completed'?'✅':sa.status==='in_progress'?'⟳':'○';
       return`<span class="sum-sa" style="color:${col}">${ic} ${sa.abbr}</span>`;
@@ -1126,7 +1160,7 @@ function renderMap(VS){
 
     // Title
     ctx.font='bold 14px Inter,system-ui';ctx.fillStyle='#1a2332';ctx.textAlign='center';
-    ctx.fillText('United States — National PG Acquisition Map',W/2,24);
+    ctx.fillText('United States — Doctor Group Recruitment Map',W/2,24);
 
     // Draw each SA at its geographic position
     VS.sas.forEach((sa,si)=>{
@@ -1283,7 +1317,7 @@ function renderNarration(focusWeek){
   const byWeek={};
   S.narration.forEach(n=>{if(!byWeek[n.tick])byWeek[n.tick]=[];byWeek[n.tick].push(n);});
   const weeks=Object.keys(byWeek).map(Number).sort((a,b)=>b-a);
-  el.innerHTML=`<div class="narr-title">📋 ${isLive?'Simulation Log — Week 0 to '+S.tick:'Week '+fw+' Detail'}</div>`+
+  el.innerHTML=`<div class="narr-title">📋 ${isLive?'Activity Log [What happened each week] — Week 0 to '+S.tick:'Week '+fw+' Detail'}</div>`+
     weeks.map(w=>{
       const entries=byWeek[w];
       const isFocused=w===fw;
@@ -1303,10 +1337,10 @@ function updateWFChips(VS){
   sa.hhs.forEach(h=>{if(h.done)done++;else if(h.started)active++;else pending++;});
   document.getElementById('wfChips').innerHTML=`
     <div style="font-size:12px;font-weight:600;color:var(--td);margin-bottom:6px">${sa.name}</div>
-    <span class="wf-chip-sm"><span class="dot" style="background:var(--g)"></span>${done} Done</span>
-    <span class="wf-chip-sm"><span class="dot" style="background:var(--cy)"></span>${active} Active</span>
-    <span class="wf-chip-sm"><span class="dot" style="background:var(--tm)"></span>${pending} Pending</span>
-    <div style="font-size:11px;color:var(--tm);margin-top:6px">Phase: ${sa.status==='completed'?'✅ Complete':sa.status==='in_progress'?'⟳ Running':'○ Waiting'}</div>`;
+    <span class="wf-chip-sm"><span class="dot" style="background:var(--g)"></span>${done} Finished</span>
+    <span class="wf-chip-sm"><span class="dot" style="background:var(--cy)"></span>${active} Working</span>
+    <span class="wf-chip-sm"><span class="dot" style="background:var(--tm)"></span>${pending} Waiting</span>
+    <div style="font-size:11px;color:var(--tm);margin-top:6px">Status: ${sa.status==='completed'?'✅ All done':sa.status==='in_progress'?'⟳ Working on it':'○ Not started yet'}</div>`;
 }
 
 // ── WF Graph (shared) ──
@@ -1353,9 +1387,9 @@ function renderWFGraph(ctx,canvas,sa){
   ctx.setLineDash([5,5]);ctx.strokeStyle='rgba(100,116,139,.1)';ctx.lineWidth=1;
   ctx.beginPath();ctx.moveTo(pad,ty(.50));ctx.lineTo(gw+pad,ty(.50));ctx.stroke();ctx.setLineDash([]);
   ctx.font='bold 9px Inter,system-ui';ctx.fillStyle='#ea580c';ctx.textAlign='left';
-  ctx.fillText('PHASE 1: SA Market Analysis — Home Health, PG Density, Cultural',pad+4,ty(.01));
+  ctx.fillText('PHASE 1: Research [studying the market — home health agencies, doctor groups, local culture]',pad+4,ty(.01));
   ctx.fillStyle='#059669';
-  ctx.fillText('PHASE 2: Customer Success — PG Onboarding (2.1–2.5) → HH Onboarding (2.6)',pad+4,ty(.53));
+  ctx.fillText('PHASE 2: Onboarding [getting new partners set up and connected]',pad+4,ty(.53));
 }
 function rRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
 
@@ -1373,14 +1407,14 @@ function renderWFDetail(VS){
   document.getElementById('wfdSaCards').innerHTML=VS.sas.map(s=>{
     const hd=s.hhs.filter(h=>h.done).length,pct=s.hhs.length?Math.round(hd/s.hhs.length*100):0;
     const col=s.status==='completed'?'var(--g)':s.status==='in_progress'?'var(--cy)':'var(--tm)';
-    return`<div class="wfd-sa-card" onclick="selSA=${s.id}" style="${s.id===selSA?'border-color:var(--cy)':''}"><div class="sa-name">${s.name}</div><div style="font-size:12px;color:var(--td)">${hd}/${s.hhs.length} · <span style="color:${col}">${s.status==='completed'?'✅ Complete':s.status==='in_progress'?'⟳ Running':'○ Waiting'}</span></div><div class="sa-prog-bar"><div class="sa-prog-fill" style="width:${pct}%;background:${col}"></div></div></div>`;
+    return`<div class="wfd-sa-card" onclick="selSA=${s.id}" style="${s.id===selSA?'border-color:var(--cy)':''}"><div class="sa-name">${s.name}</div><div style="font-size:12px;color:var(--td)">${hd}/${s.hhs.length} finished · <span style="color:${col}">${s.status==='completed'?'✅ All done':s.status==='in_progress'?'⟳ Working on it':'○ Not started yet'}</span></div><div class="sa-prog-bar"><div class="sa-prog-fill" style="width:${pct}%;background:${col}"></div></div></div>`;
   }).join('');
   let done=0,active=0,pending=0;
   sa.hhs.forEach(h=>{const st=getHHStatus(h);if(st.cls==='done'||st.cls==='no-locs')done++;else if(st.cls==='active'||st.cls==='stuck')active++;else pending++;});
   document.getElementById('wfdKpi').innerHTML=`
-    <div class="wfd-kpi-card"><div class="kv" style="color:var(--cy)">${active}</div><div class="kl">Running</div></div>
-    <div class="wfd-kpi-card"><div class="kv" style="color:var(--g)">${done}</div><div class="kl">Done</div></div>
-    <div class="wfd-kpi-card"><div class="kv" style="color:var(--tm)">${pending}</div><div class="kl">Pending</div></div>`;
+    <div class="wfd-kpi-card"><div class="kv" style="color:var(--cy)">${active}</div><div class="kl">Working Now</div></div>
+    <div class="wfd-kpi-card"><div class="kv" style="color:var(--g)">${done}</div><div class="kl">Finished</div></div>
+    <div class="wfd-kpi-card"><div class="kv" style="color:var(--tm)">${pending}</div><div class="kl">Waiting</div></div>`;
   const taskCounts=[0,0,0,0];
   sa.hhs.forEach(h=>{if(h.started&&!h.done)TASK_STEP_RANGES.forEach((r,ti)=>{if(h.wfStep>=r.min&&h.wfStep<=r.max)taskCounts[ti]++;});});
   document.getElementById('wfdInstChips').innerHTML=TASK_STEP_RANGES.map((r,ti)=>
@@ -1388,7 +1422,7 @@ function renderWFDetail(VS){
   const rows=sa.hhs.filter(h=>h.started);
   document.getElementById('wfdTbody').innerHTML=(rows.length?rows:sa.hhs.slice(0,5)).map(h=>{
     const st=getHHStatus(h);
-    return`<tr><td style="font-weight:600;color:var(--t)">${h.name.replace(' Home Health','')}</td><td>${h.started?STEP_NAMES[h.wfStep]:'—'}</td><td><span class="status-badge ${st.cls}">${st.icon} ${st.label}</span></td><td style="font-variant-numeric:tabular-nums">${h.started?(h.done?h.totalTicks+'w':h.stepTicks+'w'):'—'}</td></tr>`;
+    return`<tr><td style="font-weight:600;color:var(--t)">${h.name.replace(' Home Health','')}</td><td>${h.started?STEP_NAMES[h.wfStep]:'—'}</td><td><span class="status-badge ${st.cls}">${st.icon} ${st.label}</span></td><td style="font-variant-numeric:tabular-nums" title="Time spent on current step">${h.started?(h.done?h.totalTicks+' weeks total':h.stepTicks+' weeks so far'):'—'}</td></tr>`;
   }).join('');
 
   const curHH=sa.wfCur>=0&&sa.wfCur<sa.hhs.length?sa.hhs[sa.wfCur]:null;
@@ -1408,7 +1442,7 @@ function renderWFDetail(VS){
     const icon=isDone?'<span style="color:var(--g)">✓</span>':isActive?'<span style="color:var(--cy)">▸</span>':'<span style="color:var(--tm)">○</span>';
     const isExpanded=expandedTasks.has('sa_'+ti)||isActive;
     const doneCount=task.items.filter((_,ii)=>step>range.min+ii).length;
-    const summary=isDone?`${task.items.length}/${task.items.length} complete`:isActive?`${doneCount}/${task.items.length} in progress`:`0/${task.items.length}`;
+    const summary=isDone?`${task.items.length}/${task.items.length} finished`:isActive?`${doneCount}/${task.items.length} working on it`:`0/${task.items.length} not started`;
     taskHTML+=`<div class="task-card ${cls} ${isExpanded?'expanded':''}" data-task-id="sa_${ti}">
       <div class="task-header" onclick="toggleTask('sa_${ti}')">
         <div class="task-name">${icon} ${task.name}</div>
@@ -1427,7 +1461,7 @@ function renderWFDetail(VS){
     const cls=isActive?'active':isDone?'done':'';
     const icon=isDone?'<span style="color:var(--g)">✓</span>':isActive?'<span style="color:var(--cy)">▸</span>':'<span style="color:var(--tm)">○</span>';
     const isExpanded=expandedTasks.has('cs_'+ti)||isActive;
-    const summary=isDone?'Complete':isActive?'In Progress':'Pending';
+    const summary=isDone?'Finished':isActive?'Working on it':'Not started';
     taskHTML+=`<div class="task-card ${cls} ${isExpanded?'expanded':''}" data-task-id="cs_${ti}">
       <div class="task-header" onclick="toggleTask('cs_${ti}')">
         <div class="task-name">${icon} ${task.name}</div>
@@ -1478,11 +1512,11 @@ function renderOrchestrator(VS){
   instances.forEach(i=>{if(i.status==='done')completed++;else if(i.status==='stuck')blocked++;else if(i.status==='active')running++;else pending2++;});
   const total=instances.length||1;
   document.getElementById('orchSnap').innerHTML=`
-    <div class="wfd-kpi-card"><div class="kv">${instances.length}</div><div class="kl">Total</div></div>
-    <div class="wfd-kpi-card"><div class="kv" style="color:var(--cy)">${running}</div><div class="kl">Running</div></div>
-    <div class="wfd-kpi-card"><div class="kv" style="color:var(--g)">${completed}</div><div class="kl">Completed</div></div>
-    <div class="wfd-kpi-card"><div class="kv" style="color:var(--pk)">${blocked}</div><div class="kl">Blocked</div></div>
-    <div class="wfd-kpi-card"><div class="kv" style="color:var(--g)">${Math.round(completed/total*100)}%</div><div class="kl">Complete</div></div>`;
+    <div class="wfd-kpi-card"><div class="kv">${instances.length}</div><div class="kl">Total Tasks</div></div>
+    <div class="wfd-kpi-card"><div class="kv" style="color:var(--cy)">${running}</div><div class="kl">Working Now</div></div>
+    <div class="wfd-kpi-card"><div class="kv" style="color:var(--g)">${completed}</div><div class="kl">Finished</div></div>
+    <div class="wfd-kpi-card"><div class="kv" style="color:var(--pk)">${blocked}</div><div class="kl">Stuck [needs help]</div></div>
+    <div class="wfd-kpi-card"><div class="kv" style="color:var(--g)">${Math.round(completed/total*100)}%</div><div class="kl">Progress</div></div>`;
   document.getElementById('orchTable').innerHTML=instances.map(i=>
     `<tr class="${i.status==='stuck'?'stuck':''}"><td style="font-weight:600;font-size:11px">${i.id}</td><td style="font-size:11px">${i.type}</td><td>${i.entity}</td><td>${i.action}</td><td><span class="status-badge ${i.status}">${i.statusIcon} ${i.statusLabel}</span></td><td style="font-variant-numeric:tabular-nums">${i.time?i.time+'w':'—'}</td></tr>`
   ).join('');
@@ -1492,20 +1526,20 @@ function renderOrchestrator(VS){
   document.getElementById('orchIntel').innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
       <div>
-        <div style="font-size:11px;font-weight:700;color:var(--pk);margin-bottom:6px">Top Bottlenecks</div>
-        ${sorted.length?sorted.map(([k,v])=>`<div class="ct-bar-row"><span class="bl">${k.replace(/_/g,' ')}</span><div class="bw"><div class="bf" style="width:${v/Math.max(blocked,1)*100}%;background:var(--pk)"></div></div><span class="bv">${v}</span></div>`).join(''):'<div style="font-size:11px;color:var(--tm)">No bottlenecks detected</div>'}
+        <div style="font-size:11px;font-weight:700;color:var(--pk);margin-bottom:6px">Top Blockers [what's slowing things down]</div>
+        ${sorted.length?sorted.map(([k,v])=>`<div class="ct-bar-row"><span class="bl">${k.replace(/_/g,' ')}</span><div class="bw"><div class="bf" style="width:${v/Math.max(blocked,1)*100}%;background:var(--pk)"></div></div><span class="bv">${v}</span></div>`).join(''):'<div style="font-size:11px;color:var(--tm)">Nothing is stuck right now!</div>'}
       </div>
       <div>
-        <div style="font-size:11px;font-weight:700;color:var(--bl);margin-bottom:6px">Workflow Distribution</div>
+        <div style="font-size:11px;font-weight:700;color:var(--bl);margin-bottom:6px">Task Breakdown [how work is split up]</div>
         ${Object.entries(typeCount).map(([k,v])=>`<div class="ct-bar-row"><span class="bl">${k}</span><div class="bw"><div class="bf" style="width:${v/total*100}%;background:var(--bl)"></div></div><span class="bv">${v}</span></div>`).join('')}
       </div>
     </div>
-    <div style="margin-top:10px;font-size:11px;font-weight:700;color:var(--td)">Recommendations</div>
+    <div style="margin-top:10px;font-size:11px;font-weight:700;color:var(--td)">What's Happening [insights & next steps]</div>
     <div style="font-size:11px;color:var(--td);line-height:1.6">
-      ${blocked>0?`<div>• <b>${blocked}</b> instance(s) blocked. ${sorted[0]?'Top cause: <b>'+sorted[0][0].replace(/_/g,' ')+'</b> ('+sorted[0][1]+' instances).':''}</div>`:''}
-      ${running>0?`<div>• <b>${running}</b> workflow(s) actively processing. Throughput: ${VS.tick>0?(completed/VS.tick).toFixed(1):'0'} completions/week.</div>`:''}
-      ${completed===total&&total>0?'<div>• All workflows complete. No action needed.</div>':''}
-      ${total===0?'<div>• No workflows running yet. Waiting for PGs to reach BOFU.</div>':''}
+      ${blocked>0?`<div>• <b>${blocked}</b> task(s) are stuck. ${sorted[0]?'Biggest reason: <b>'+sorted[0][0].replace(/_/g,' ')+'</b> (affecting '+sorted[0][1]+' tasks).':''}</div>`:''}
+      ${running>0?`<div>• <b>${running}</b> task(s) are being worked on. Speed: ${VS.tick>0?(completed/VS.tick).toFixed(1):'0'} finished per week.</div>`:''}
+      ${completed===total&&total>0?'<div>• Everything is done! No action needed.</div>':''}
+      ${total===0?'<div>• No tasks running yet. Waiting for doctor groups to move through the pipeline [reach BOFU stage].</div>':''}
     </div>`;
 }
 
@@ -1550,9 +1584,9 @@ function renderCT(VS){
   const rates=getRates();
   document.getElementById('ctFunnel').innerHTML=`
     <div class="ct-metric">${FUNNELS.map((f,i)=>`<div class="ct-card"><div class="cv" style="color:${f.color}">${pgC[i]}</div><div class="cl">${f.icon} ${f.label}</div></div>`).join('')}</div>
-    <div class="section-title" style="font-size:9px">Conversion Rates (per week)</div>
-    ${FUNNELS.slice(0,5).map((f,i)=>`<div class="ct-bar-row"><span class="bl">${f.label}→${FUNNELS[i+1].label}</span><div class="bw"><div class="bf" style="width:${rates[i]*100}%;background:${f.color}"></div></div><span class="bv">${Math.round(rates[i]*100)}%</span></div>`).join('')}
-    <div class="section-title" style="font-size:9px;margin-top:8px">Drop-offs</div>
+    <div class="section-title" style="font-size:9px">Conversion Rates [% that move to next stage each week]</div>
+    ${FUNNELS.slice(0,5).map((f,i)=>`<div class="ct-bar-row"><span class="bl">${f.label} → ${FUNNELS[i+1].label}</span><div class="bw"><div class="bf" style="width:${rates[i]*100}%;background:${f.color}"></div></div><span class="bv">${Math.round(rates[i]*100)}%</span></div>`).join('')}
+    <div class="section-title" style="font-size:9px;margin-top:8px">Drop-offs [those who didn't make it]</div>
     ${FUNNELS.slice(0,5).map((f,i)=>{const drop=pgC[i]>0?pgC[i]-Math.round(pgC[i]*rates[i]):0;
       return`<div class="ct-bar-row"><span class="bl">${f.label}</span><div class="bw"><div class="bf" style="width:${pgC[i]>0?(drop/pgC[i]*100):0}%;background:var(--pk)"></div></div><span class="bv">${drop}</span></div>`;
     }).join('')}`;
@@ -1567,19 +1601,19 @@ function renderCT(VS){
   const successRate=totalInst>0?((wDone/(totalInst-wPending))*100||0):0;
   document.getElementById('ctWorkflow').innerHTML=`
     <div class="ct-metric">
-      <div class="ct-card"><div class="cv" style="color:var(--cy)">${wActive}</div><div class="cl">Running</div></div>
-      <div class="ct-card"><div class="cv" style="color:var(--pk)">${wBlocked}</div><div class="cl">Blocked</div></div>
-      <div class="ct-card"><div class="cv" style="color:var(--g)">${wDone}</div><div class="cl">Completed</div></div>
-      <div class="ct-card"><div class="cv" style="color:var(--tm)">${wPending}</div><div class="cl">Pending</div></div>
+      <div class="ct-card"><div class="cv" style="color:var(--cy)">${wActive}</div><div class="cl">Working Now</div></div>
+      <div class="ct-card"><div class="cv" style="color:var(--pk)">${wBlocked}</div><div class="cl">Stuck</div></div>
+      <div class="ct-card"><div class="cv" style="color:var(--g)">${wDone}</div><div class="cl">Finished</div></div>
+      <div class="ct-card"><div class="cv" style="color:var(--tm)">${wPending}</div><div class="cl">Waiting</div></div>
     </div>
-    ${wBlocked?`<div class="section-title" style="font-size:9px">Block Breakdown</div>
+    ${wBlocked?`<div class="section-title" style="font-size:9px">Why Tasks Are Stuck [block reasons]</div>
       ${Object.entries(blockTypes).filter(([,v])=>v>0).map(([k,v])=>`<div class="ct-bar-row"><span class="bl">${k.replace(/_/g,' ')}</span><div class="bw"><div class="bf" style="width:${(v/Math.max(wBlocked,1))*100}%;background:var(--pk)"></div></div><span class="bv">${v}</span></div>`).join('')}`:''}
-    <div class="ct-bar-row" style="margin-top:8px"><span class="bl">Success Rate</span><div class="bw"><div class="bf" style="width:${Math.min(successRate,100)}%;background:var(--g)"></div></div><span class="bv">${Math.round(successRate)}%</span></div>`;
+    <div class="ct-bar-row" style="margin-top:8px"><span class="bl">Success Rate [% completed successfully]</span><div class="bw"><div class="bf" style="width:${Math.min(successRate,100)}%;background:var(--g)"></div></div><span class="bv">${Math.round(successRate)}%</span></div>`;
 
   document.getElementById('ctSA').innerHTML=VS.sas.map(sa=>{
     const hd=sa.hhs.filter(h=>h.done).length;const pct=sa.hhs.length?Math.round(hd/sa.hhs.length*100):0;
     const col=sa.status==='completed'?'var(--g)':sa.status==='in_progress'?'var(--cy)':'var(--tm)';
-    return`<div class="ct-sa-card"><div class="sa-hdr"><span>${sa.name}</span><span style="color:${col};font-size:11px">${sa.status==='completed'?'✅ Complete':sa.status==='in_progress'?'⟳ Running':'○ Waiting'}</span></div>
+    return`<div class="ct-sa-card"><div class="sa-hdr"><span>${sa.name}</span><span style="color:${col};font-size:11px">${sa.status==='completed'?'✅ All done':sa.status==='in_progress'?'⟳ Working on it':'○ Not started yet'}</span></div>
       <div class="sa-prog-bar" style="height:5px;background:rgba(0,0,0,.06);border-radius:3px;margin:6px 0"><div class="sa-prog-fill" style="width:${pct}%;background:${col};height:100%;border-radius:3px"></div></div>
       <div class="ct-checklist">
         <div>${sa.hhs.every(h=>h.done)?'✅':'○'} Home Health Coverage: ${hd}/${sa.hhs.length} (${pct}%)</div>
@@ -1596,10 +1630,10 @@ function renderCT(VS){
   const sasDone=VS.sas.filter(s=>s.status==='completed').length;
   document.getElementById('ctSystem').innerHTML=`
     <div class="ct-metric">
-      <div class="ct-card"><div class="cv" style="color:var(--bl)">${throughput}</div><div class="cl">HH/Week</div></div>
-      <div class="ct-card"><div class="cv" style="color:var(--g)">${coverage}%</div><div class="cl">Coverage</div></div>
-      <div class="ct-card"><div class="cv" style="color:var(--o)">${sasDone}/${VS.sas.length}</div><div class="cl">SAs Done</div></div>
-      <div class="ct-card"><div class="cv" style="color:var(--pk)">${bottleneck&&bottleneck[1]>0?bottleneck[1]:'0'}</div><div class="cl">${bottleneck&&bottleneck[1]>0?bottleneck[0].replace(/_/g,' '):'No Bottleneck'}</div></div>
+      <div class="ct-card"><div class="cv" style="color:var(--bl)">${throughput}</div><div class="cl">HH Finished/Week</div></div>
+      <div class="ct-card"><div class="cv" style="color:var(--g)">${coverage}%</div><div class="cl">Coverage [% done]</div></div>
+      <div class="ct-card"><div class="cv" style="color:var(--o)">${sasDone}/${VS.sas.length}</div><div class="cl">Areas Done</div></div>
+      <div class="ct-card"><div class="cv" style="color:var(--pk)">${bottleneck&&bottleneck[1]>0?bottleneck[1]:'0'}</div><div class="cl">${bottleneck&&bottleneck[1]>0?bottleneck[0].replace(/_/g,' '):'Nothing stuck'}</div></div>
     </div>`;
 }
 
@@ -1652,7 +1686,7 @@ function renderAll(){
   document.getElementById('sasDone').textContent=S.sas.filter(s=>s.status==='completed').length+'/2';
   document.getElementById('navWeek').textContent='W'+S.tick;
   const anyIP=S.sas.some(s=>s.status==='in_progress'),allDone=S.sas.every(s=>s.status==='completed');
-  document.getElementById('phaseBadge').textContent=allDone?'Phase: Complete':anyIP?'Phase: Workflow Active':'Phase: Acquisition';
+  document.getElementById('phaseBadge').textContent=allDone?'All done!':anyIP?'Tasks are running':'Finding doctor groups';
 
   // Update sidebar SA badges
   VS.sas.forEach((sa,i)=>{
@@ -1666,7 +1700,7 @@ function renderAll(){
   VS.pgs.forEach(pg=>{if(pg.stage>=5&&pg.cs.phase!=='idle')instCount++;});
   const navInst=document.getElementById('navInstances');if(navInst)navInst.textContent=instCount;
 
-  document.getElementById('viewLabel').textContent=isLive?`Week ${S.tick} (LIVE)`:`Viewing Week ${viewWeek} of ${S.tick}`;
+  document.getElementById('viewLabel').textContent=isLive?`Week ${S.tick} (LIVE — watching in real time)`:`Looking at Week ${viewWeek} of ${S.tick} [past data]`;
   document.getElementById('viewLabel').style.color=isLive?'var(--g)':'var(--o)';
   document.getElementById('btnPrev').disabled=S.running||(viewWeek===0);
   document.getElementById('btnNext').disabled=S.running||isLive;
