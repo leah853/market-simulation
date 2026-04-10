@@ -6,6 +6,13 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "8000"],
       "port": 8000
+    },
+    {
+      "name": "mimimomentum",
+      "runtimeExecutable": "/Users/chhandasri/.local/bin/npx",
+      "runtimeArgs": ["next", "dev", "--port", "3000"],
+      "port": 3000,
+      "cwd": "/Users/chhandasri/Code/Session 1/mimimoenum"
     }
   ]
 }
