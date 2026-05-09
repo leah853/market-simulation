@@ -1,0 +1,36 @@
+{% extends "_shell.html" %}
+{% set active_nav = "sync" %}
+{% block title %}Per-row errors · {{ app_brand }}{% endblock %}
+
+{% block content %}
+<a href="javascript:history.back()" class="text-sm text-slate-500 hover:text-slate-700 mb-2 inline-block">← Back</a>
+
+<h1 class="text-xl font-semibold text-slate-900 mb-1">Per-row errors</h1>
+<p class="text-sm text-slate-500 mb-6">{{ errors|length }} rows had errors</p>
+
+{% if errors %}
+<div class="space-y-3">
+  {% for e in errors %}
+    <div class="bg-white border border-red-200 rounded-md p-4">
+      <div class="flex items-start gap-3">
+        <span class="text-red-500 text-lg">✕</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-3 text-xs text-slate-500 mb-1">
+            <span>Row {{ e.row_number or '—' }}</span>
+            {% if e.field %}<span>·</span><span>Field: <code class="font-mono">{{ e.field }}</code></span>{% endif %}
+          </div>
+          <div class="text-sm text-slate-900">{{ e.error }}</div>
+          {% if e.suggestion %}
+            <div class="text-xs text-blue-700 mt-1">💡 {{ e.suggestion }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="bg-white border border-slate-200 rounded-md p-12 text-center text-sm text-slate-500">
+  No errors recorded.
+</div>
+{% endif %}
+{% endblock %}

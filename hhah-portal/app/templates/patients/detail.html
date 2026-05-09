@@ -1,0 +1,135 @@
+{% extends "_shell.html" %}
+{% set active_nav = "patients" %}
+{% set p = view.patient %}
+{% block title %}{{ p.last_name }}, {{ p.first_name }} · {{ app_brand }}{% endblock %}
+
+{% block content %}
+<a href="/patients" class="text-sm text-slate-500 hover:text-slate-700 mb-2 inline-block">← Back to Patients</a>
+
+<div class="flex items-start justify-between mb-4">
+  <div>
+    <h1 class="text-xl font-semibold text-slate-900">{{ p.last_name }}, {{ p.first_name }}</h1>
+    <p class="text-sm text-slate-500 mt-1">
+      MRN {{ p.mrn }} · DOB {{ p.dob.isoformat() }}
+      {% if p.gender %} · {{ p.gender }}{% endif %}
+    </p>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="/flags/new?subject_type=patient&subject_id={{ p.patient_id }}"
+       class="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-md hover:bg-slate-50">⚑ Flag</a>
+    <a href="/communication/new?patient_id={{ p.patient_id }}"
+       class="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-md hover:bg-slate-50">💬 Talk to Us</a>
+  </div>
+</div>
+
+{# Care plan banner #}
+<div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+  <div class="text-xs text-blue-700 uppercase tracking-wide mb-1">Care plan</div>
+  {% if view.practitioner %}
+    <div class="font-medium text-slate-900">
+      🏥 {% if view.practitioner.practitioner_type == 'physician' %}Dr. {% endif -%}
+      {{ view.practitioner.first_name }} {{ view.practitioner.last_name }}{% if view.practitioner.credentials %}, {{ view.practitioner.credentials }}{% endif %}
+    </div>
+    {% if view.practice_org %}
+      <div class="text-sm text-slate-700">{{ view.practice_org.name }}</div>
+    {% endif %}
+    {% if p.attribution_updated_at %}
+      <div class="text-xs text-slate-500 mt-1">
+        Attributed via 485 · updated {{ p.attribution_updated_at.strftime('%Y-%m-%d') }}
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="text-sm text-slate-500 italic">Care plan attribution pending — awaiting first signed 485</div>
+  {% endif %}
+</div>
+
+{# Tabs #}
+<div class="border-b border-slate-200 mb-4">
+  <nav class="flex gap-6 -mb-px text-sm">
+    <a href="#timeline" class="border-b-2 border-blue-600 text-blue-700 font-medium pb-2">Timeline</a>
+    <a href="#documents" class="text-slate-500 hover:text-slate-700 pb-2">Documents</a>
+    <a href="#flags" class="text-slate-500 hover:text-slate-700 pb-2">Flags</a>
+    <a href="#activity" class="text-slate-500 hover:text-slate-700 pb-2">Activity</a>
+  </nav>
+</div>
+
+{# Timeline view #}
+{% if view.current_admission %}
+<section id="timeline" class="bg-white rounded-xl border border-slate-200 p-5 mb-4">
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="text-sm font-semibold text-slate-700">
+      CURRENT ADMISSION · started {{ view.current_admission.start_date.isoformat() }}
+    </h2>
+    <span class="text-xs text-slate-500">
+      {{ view.current_admission.admission_source or '—' }}
+    </span>
+  </div>
+
+  {# Ribbon #}
+  <div class="flex items-center gap-2 my-4">
+    <div class="w-2 h-2 bg-blue-600 rounded-full"></div>
+    <div class="flex-1 h-0.5 bg-slate-200"></div>
+    <div class="text-xs text-slate-500">Admission</div>
+    <div class="flex-1 h-0.5 bg-slate-200"></div>
+    <div class="w-2 h-2 bg-blue-600 rounded-full"></div>
+    <div class="text-xs text-slate-500">Today</div>
+  </div>
+
+  {# Episodes #}
+  {% for ep in current_episodes %}
+    {% set is_current = ep.status == 'current' %}
+    <div class="border {% if is_current %}border-blue-300 bg-blue-50/40{% else %}border-slate-200{% endif %} rounded-lg p-4 mb-3">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="font-medium text-slate-900">
+            {% if is_current %}▼{% else %}▷{% endif %}
+            Episode {{ ep.episode_number }}
+            <span class="text-xs font-normal text-slate-500">({{ ep.status }})</span>
+          </div>
+          <div class="text-sm text-slate-600 mt-0.5">
+            {{ ep.start_date.isoformat() }} → {{ ep.end_date.isoformat() }}
+          </div>
+        </div>
+        <div class="text-xs text-slate-500">
+          {{ ep.certification_status.replace('_', ' ') }} ·
+          {{ ep.billability_status.replace('_', ' ') }}
+        </div>
+      </div>
+
+      {% if is_current %}
+        <div class="mt-3 text-xs text-slate-500 italic">
+          Order rows + episode documents will appear here once the orchestrator
+          ingests data for this episode.
+        </div>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="text-sm text-slate-500 italic">No episodes recorded for this admission yet.</div>
+  {% endfor %}
+</section>
+{% else %}
+<section class="bg-white rounded-xl border border-slate-200 p-12 text-center">
+  <p class="text-sm text-slate-500">
+    No active admission. Admissions are created when a 485 is signed and synced.
+  </p>
+</section>
+{% endif %}
+
+{# Past admissions #}
+{% if view.past_admissions %}
+<section class="bg-white rounded-xl border border-slate-200 p-5">
+  <h2 class="text-sm font-semibold text-slate-700 mb-3">PAST ADMISSIONS ({{ view.past_admissions|length }})</h2>
+  <div class="space-y-2">
+    {% for adm in view.past_admissions %}
+      <div class="flex items-center justify-between text-sm py-2 border-b border-slate-100 last:border-0">
+        <span>
+          ▷ {{ adm.start_date.isoformat() }} →
+          {% if adm.end_date %}{{ adm.end_date.isoformat() }}{% else %}ongoing{% endif %}
+        </span>
+        <span class="text-xs text-slate-500">{{ adm.status }}</span>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

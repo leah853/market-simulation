@@ -1,0 +1,31 @@
+{% extends "_shell.html" %}
+{% block title %}Settings · {{ app_brand }}{% endblock %}
+
+{% block content %}
+<h1 class="text-xl font-semibold text-slate-900 mb-6">Settings</h1>
+
+<div class="bg-white rounded-xl border border-slate-200 p-5 mb-4 max-w-xl">
+  <h2 class="text-sm font-semibold text-slate-700 mb-3">Notifications</h2>
+  <table class="w-full text-sm">
+    <thead class="text-xs text-slate-500 uppercase tracking-wide">
+      <tr><th></th><th>In-app</th><th class="text-slate-300">Email</th><th class="text-slate-300">SMS</th></tr>
+    </thead>
+    <tbody>
+      {% for label in ['Urgent signatures', 'Recert due', 'Sync alerts', 'Flagged documents', 'Communications from Us'] %}
+        <tr class="border-t border-slate-100">
+          <td class="py-2">{{ label }}</td>
+          <td class="text-center">✓</td>
+          <td class="text-center text-slate-300">—</td>
+          <td class="text-center text-slate-300">—</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="text-xs text-slate-500 mt-3">Email + SMS coming in a future release.</p>
+</div>
+
+<div class="bg-white rounded-xl border border-slate-200 p-5 max-w-xl">
+  <h2 class="text-sm font-semibold text-slate-700 mb-3">Display</h2>
+  <p class="text-sm text-slate-500">Theme and density preferences coming soon.</p>
+</div>
+{% endblock %}

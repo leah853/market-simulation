@@ -1,0 +1,88 @@
+{% extends "_shell.html" %}
+{% set active_nav = "care-docs" %}
+{% block title %}Care Coordination Documents · {{ app_brand }}{% endblock %}
+
+{% block content %}
+<h1 class="text-xl font-semibold text-slate-900 mb-4">Care Coordination Documents</h1>
+
+{# Tabs #}
+<div class="border-b border-slate-200 mb-4">
+  <nav class="flex gap-6 -mb-px text-sm">
+    <a href="/care-docs/signature-required"
+       class="pb-2 {% if tab == 'signature_required' %}border-b-2 border-blue-600 text-blue-700 font-medium{% else %}text-slate-500 hover:text-slate-700{% endif %}">
+      Docs needing Phy Signatures · {{ counts.signature_required }}
+    </a>
+    <a href="/care-docs/other"
+       class="pb-2 {% if tab == 'other' %}border-b-2 border-blue-600 text-blue-700 font-medium{% else %}text-slate-500 hover:text-slate-700{% endif %}">
+      Other Care Coordination Docs · {{ counts.other }}
+    </a>
+  </nav>
+</div>
+
+<p class="text-sm text-slate-500 mb-4">
+  {% if tab == 'signature_required' %}
+    Documents that require physician signature: 485, F2F, supplemental orders, discharge summaries.
+  {% else %}
+    Patient records that don't require physician signature: hospital DC summaries, lab results, insurance auths, internal HHAH notes.
+  {% endif %}
+</p>
+
+<form method="get" class="flex items-center gap-3 mb-4">
+  <label class="flex items-center gap-2 text-sm text-slate-600">
+    <input type="checkbox" name="flagged" value="1" {% if flagged %}checked{% endif %}>
+    ⚑ Flagged only
+  </label>
+  <button type="submit" class="px-3 py-1.5 text-xs text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50">Apply</button>
+</form>
+
+<div class="bg-white rounded-xl border border-slate-200">
+  {% if rows %}
+  <table class="w-full text-sm">
+    <thead class="text-xs text-slate-500 uppercase tracking-wide">
+      <tr>
+        <th class="text-left px-5 py-2 font-medium">Patient</th>
+        <th class="text-left px-5 py-2 font-medium">Type</th>
+        <th class="text-left px-5 py-2 font-medium">Practitioner</th>
+        <th class="text-left px-5 py-2 font-medium">Uploaded</th>
+        <th class="text-left px-5 py-2 font-medium">Status</th>
+        <th class="text-left px-5 py-2 font-medium">⚑</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in rows %}
+      <tr class="border-t border-slate-100 hover:bg-slate-50 cursor-pointer"
+          onclick="window.location='/care-docs/{{ r.document.id }}'">
+        <td class="px-5 py-3">
+          {% if r.patient %}
+            <div class="font-medium text-slate-900">{{ r.patient.last_name }}, {{ r.patient.first_name }}</div>
+            <div class="text-xs text-slate-500">MRN {{ r.patient.mrn }}</div>
+          {% else %}—{% endif %}
+        </td>
+        <td class="px-5 py-3 text-slate-700">{{ r.document.document_type }}</td>
+        <td class="px-5 py-3 text-slate-700">
+          {% if r.practitioner %}{{ r.practitioner.first_name[:1] }}. {{ r.practitioner.last_name }}{% else %}—{% endif %}
+        </td>
+        <td class="px-5 py-3 text-slate-700 text-xs">{{ r.document.created_at.strftime('%Y-%m-%d') }}</td>
+        <td class="px-5 py-3">
+          <span class="px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">
+            {{ r.document.lifecycle_state }}
+          </span>
+        </td>
+        <td class="px-5 py-3 text-slate-700">
+          {% if r.flag_count %}<span class="text-amber-700 text-xs font-medium">⚑ {{ r.flag_count }}</span>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <div class="p-12 text-center text-sm text-slate-500">
+      {% if tab == 'signature_required' %}
+        🎉 No documents pending physician signature.
+      {% else %}
+        No patient records yet — they'll appear as data syncs.
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

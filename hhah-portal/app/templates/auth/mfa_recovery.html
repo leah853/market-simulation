@@ -1,0 +1,23 @@
+{% extends "auth/_auth_layout.html" %}
+{% block title %}Save your recovery codes · {{ app_brand }}{% endblock %}
+
+{% block auth_content %}
+<h1 class="text-lg font-semibold text-slate-900">Save your recovery codes</h1>
+<p class="text-sm text-slate-500 mt-1">
+  Use these if you lose access to your authenticator. Each code works once.
+</p>
+
+<div class="bg-amber-50 border border-amber-200 text-amber-800 rounded-md p-3 mt-4 text-xs">
+  ⚠ Store these somewhere safe. We won't show them again.
+</div>
+
+<div class="grid grid-cols-2 gap-2 mt-4 font-mono text-sm">
+  {% for code in recovery_codes %}
+    <div class="bg-slate-50 border border-slate-200 rounded p-2 text-center">{{ code }}</div>
+  {% endfor %}
+</div>
+
+<a href="/" class="block w-full mt-6 px-4 py-2.5 text-sm font-medium text-center text-white bg-blue-600 rounded-md hover:bg-blue-700">
+  I've saved them — continue
+</a>
+{% endblock %}

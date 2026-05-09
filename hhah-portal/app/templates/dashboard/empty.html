@@ -1,0 +1,49 @@
+{% extends "_shell.html" %}
+{% set active_nav = "home" %}
+{% block title %}Dashboard · {{ app_brand }}{% endblock %}
+
+{% block content %}
+<h1 class="text-xl font-semibold text-slate-900 mb-1">
+  Welcome to your portal{% if user %}, {{ user.role.replace('_',' ').title() }}{% endif %} 👋
+</h1>
+<p class="text-sm text-slate-500 mb-6">
+  in partnership with <span class="font-medium text-slate-700">Sunrise Home Health</span>
+</p>
+
+<div class="bg-white rounded-xl border border-slate-200 p-12 text-center mb-6">
+  <div class="text-4xl mb-3">📊</div>
+  <h2 class="text-lg font-semibold text-slate-900 mb-1">Your dashboard is coming soon</h2>
+  <p class="text-sm text-slate-500 max-w-md mx-auto">
+    It will populate automatically once your first patient episode lands in our system.
+  </p>
+</div>
+
+<h2 class="text-sm font-semibold text-slate-700 mb-3">Get started</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <a href="/sync" class="block bg-white rounded-xl border border-slate-200 p-5 hover:border-blue-300 hover:shadow-sm transition">
+    <div class="text-2xl mb-2">📥</div>
+    <div class="font-medium text-slate-900 mb-1">Upload patients</div>
+    <div class="text-xs text-slate-500">Send your first patient batch</div>
+    <div class="mt-3 text-xs font-medium text-blue-600">Start upload →</div>
+  </a>
+  <a href="/communication" class="block bg-white rounded-xl border border-slate-200 p-5 hover:border-blue-300 hover:shadow-sm transition">
+    <div class="text-2xl mb-2">💬</div>
+    <div class="font-medium text-slate-900 mb-1">Talk to Us</div>
+    <div class="text-xs text-slate-500">Questions or setup help</div>
+    <div class="mt-3 text-xs font-medium text-blue-600">Open chat →</div>
+  </a>
+  {% if can_view_baa %}
+  <a href="/admin/baa" class="block bg-white rounded-xl border border-slate-200 p-5 hover:border-blue-300 hover:shadow-sm transition">
+    <div class="text-2xl mb-2">📜</div>
+    <div class="font-medium text-slate-900 mb-1">Review the BAA</div>
+    <div class="text-xs text-slate-500">Business Associate Agreement on file</div>
+    <div class="mt-3 text-xs font-medium text-blue-600">View BAA →</div>
+  </a>
+  {% endif %}
+</div>
+
+<h2 class="text-sm font-semibold text-slate-700 mt-8 mb-3">Recent activity</h2>
+<div class="bg-white rounded-xl border border-slate-200 p-6 text-center text-sm text-slate-500">
+  Nothing here yet. Activity will appear once data starts syncing.
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "_shell.html" %}
+{% set active_nav = "care-docs" %}
+{% block title %}Document detail · {{ app_brand }}{% endblock %}
+
+{% block content %}
+<a href="javascript:history.back()" class="text-sm text-slate-500 hover:text-slate-700 mb-2 inline-block">← Back</a>
+
+<div class="flex items-start justify-between mb-4">
+  <h1 class="text-xl font-semibold text-slate-900">
+    {{ doc.document_type|replace('_', ' ')|title }}
+    {% if doc.label %}— {{ doc.label }}{% endif %}
+  </h1>
+  <div class="flex gap-2">
+    <a href="/flags/new?subject_type=document&subject_id={{ doc.id }}"
+       class="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-md hover:bg-slate-50">⚑ Flag</a>
+    <a href="/communication/new?document_id={{ doc.id }}"
+       class="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-md hover:bg-slate-50">💬 Talk to Us</a>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+  {# Preview #}
+  <div class="md:col-span-2 bg-white rounded-xl border border-slate-200 p-8 text-center">
+    <div class="text-5xl mb-2">📄</div>
+    <p class="text-sm text-slate-500">PDF preview</p>
+    <p class="text-xs text-slate-400 mt-1">{{ doc.mime_type }} · {{ doc.size_bytes or 0 }} bytes</p>
+  </div>
+
+  {# Metadata #}
+  <div class="bg-white rounded-xl border border-slate-200 p-5 text-sm space-y-3">
+    <div>
+      <div class="text-xs text-slate-500 uppercase tracking-wide">Type</div>
+      <div class="text-slate-900 font-medium">{{ doc.document_type }}</div>
+    </div>
+    <div>
+      <div class="text-xs text-slate-500 uppercase tracking-wide">Status</div>
+      <div class="text-slate-900">{{ doc.lifecycle_state }}</div>
+    </div>
+    <div>
+      <div class="text-xs text-slate-500 uppercase tracking-wide">Signature required</div>
+      <div class="text-slate-900">{% if doc.signature_required %}Yes{% else %}No{% endif %}</div>
+    </div>
+    {% if doc.document_date %}
+      <div>
+        <div class="text-xs text-slate-500 uppercase tracking-wide">Document date</div>
+        <div class="text-slate-900">{{ doc.document_date.isoformat() }}</div>
+      </div>
+    {% endif %}
+    <div>
+      <div class="text-xs text-slate-500 uppercase tracking-wide">Uploaded</div>
+      <div class="text-slate-900 text-xs">{{ doc.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+    </div>
+  </div>
+</div>
+
+{# Comments #}
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <h2 class="text-sm font-semibold text-slate-700 mb-3">Comments</h2>
+
+  {% if comments %}
+    <div class="space-y-3 mb-4">
+      {% for c in comments %}
+        <div class="text-sm border-l-2 border-slate-200 pl-3">
+          <div class="text-xs text-slate-500 mb-0.5">
+            {% if c.author_user_id %}You{% else %}Us{% endif %} · {{ c.created_at.strftime('%Y-%m-%d %H:%M') }}
+          </div>
+          <div class="text-slate-700 whitespace-pre-wrap">{{ c.body }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-sm text-slate-500 mb-4">No comments yet.</p>
+  {% endif %}
+
+  <form action="/care-docs/{{ doc.id }}/comment" method="post" class="flex gap-2">
+    <input type="text" name="body" required maxlength="4000" placeholder="Add a comment…"
+           class="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-md
+                  focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">Post</button>
+  </form>
+</div>
+{% endblock %}

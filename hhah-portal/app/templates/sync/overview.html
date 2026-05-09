@@ -1,0 +1,69 @@
+{% extends "_shell.html" %}
+{% set active_nav = "sync" %}
+{% block title %}Data Sync · {{ app_brand }}{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-xl font-semibold text-slate-900">Data Sync</h1>
+  <a href="/sync/upload"
+     class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+    Upload files
+  </a>
+</div>
+
+<div class="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+  <h2 class="text-sm font-semibold text-slate-700 mb-3">Sync health (recent)</h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <div class="text-xs text-slate-500 uppercase tracking-wide">Recent uploads</div>
+      <div class="text-2xl font-bold text-slate-900 mt-1">{{ summary.recent_count }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="bg-white rounded-xl border border-slate-200">
+  <div class="px-5 py-3 border-b border-slate-200">
+    <h2 class="text-sm font-semibold text-slate-700">Recent uploads</h2>
+  </div>
+
+  {% if uploads %}
+    <table class="w-full text-sm">
+      <thead class="text-xs text-slate-500 uppercase tracking-wide">
+        <tr>
+          <th class="text-left px-5 py-2 font-medium">Date</th>
+          <th class="text-left px-5 py-2 font-medium">Files</th>
+          <th class="text-left px-5 py-2 font-medium">Status</th>
+          <th class="text-left px-5 py-2 font-medium">Records</th>
+          <th class="text-left px-5 py-2 font-medium">Errors</th>
+          <th class="text-left px-5 py-2 font-medium"></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for u in uploads %}
+        <tr class="border-t border-slate-100">
+          <td class="px-5 py-3 text-slate-700">{{ u.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ u.file_count }}</td>
+          <td class="px-5 py-3">
+            {% set color = {
+              'queued': 'bg-slate-100 text-slate-700',
+              'processing': 'bg-blue-50 text-blue-700',
+              'complete': 'bg-emerald-50 text-emerald-700',
+              'partial': 'bg-amber-50 text-amber-700',
+              'failed': 'bg-red-50 text-red-700',
+            }[u.status] %}
+            <span class="px-2 py-0.5 rounded text-xs font-medium {{ color }}">{{ u.status }}</span>
+          </td>
+          <td class="px-5 py-3 text-slate-700">{{ u.rows_committed }}</td>
+          <td class="px-5 py-3 text-slate-700">{{ u.rows_errored }}</td>
+          <td class="px-5 py-3"><a href="/sync/uploads/{{ u.id }}" class="text-blue-600 text-xs">View</a></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="p-8 text-center text-sm text-slate-500">
+      No uploads yet. <a href="/sync/upload" class="text-blue-600">Upload your first batch</a>.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

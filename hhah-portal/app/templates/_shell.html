@@ -1,0 +1,157 @@
+{% extends "_base.html" %}
+
+{# App shell — sidebar + top bar (collapses to bottom nav on mobile). #}
+
+{% block body %}
+<div class="min-h-screen flex flex-col md:flex-row" x-data="{ mobileNavOpen: false }">
+
+  {# ─── Desktop sidebar (hidden on mobile) ─── #}
+  <aside class="hidden md:flex w-60 bg-white border-r border-slate-200 flex-col"
+         aria-label="Primary navigation">
+    <div class="px-5 py-4 border-b border-slate-200">
+      <div class="text-sm font-bold tracking-wide text-slate-900">EONEXEA</div>
+      {% if user %}
+      <div class="text-xs text-slate-500 mt-0.5">in partnership with</div>
+      <div class="text-xs font-medium text-slate-700 truncate">Sunrise Home Health</div>
+      {% endif %}
+    </div>
+
+    <nav class="flex-1 px-2 py-4 space-y-0.5 text-sm" aria-label="Main">
+      {% set nav_items = [
+        ('/', 'home', 'Home'),
+        ('/sync', 'sync', 'Data Sync'),
+        ('/patients', 'patients', 'Patients'),
+        ('/care-docs', 'care-docs', 'Care Docs'),
+        ('/flags', 'flags', 'Flags'),
+        ('/communication', 'communication', 'Talk to Us'),
+        ('/notifications', 'notifications', 'Notifications'),
+      ] %}
+      {% for href, key, label in nav_items %}
+        <a href="{{ href }}"
+           {% if active_nav == key %}aria-current="page"{% endif %}
+           class="flex items-center gap-2 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500
+                  {% if active_nav == key %}bg-blue-50 text-blue-700 font-medium{% else %}text-slate-700 hover:bg-slate-100{% endif %}">
+          <span class="w-1.5 h-1.5 rounded-full
+                       {% if active_nav == key %}bg-blue-600{% else %}bg-slate-300{% endif %}"
+                aria-hidden="true"></span>
+          {{ label }}
+        </a>
+      {% endfor %}
+    </nav>
+
+    <div class="px-2 py-3 border-t border-slate-200 space-y-0.5 text-sm">
+      <a href="/profile" class="flex items-center gap-2 px-3 py-2 rounded-md text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">Profile</a>
+      <a href="/settings" class="flex items-center gap-2 px-3 py-2 rounded-md text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">Settings</a>
+      {% if user and 'baa.view' in user.permissions %}
+      <a href="/admin/baa" class="flex items-center gap-2 px-3 py-2 rounded-md text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">BAA</a>
+      <a href="/admin/audit" class="flex items-center gap-2 px-3 py-2 rounded-md text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">Audit</a>
+      {% endif %}
+    </div>
+
+    <form action="/logout" method="post" class="px-2 py-3 border-t border-slate-200">
+      <button type="submit"
+              class="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        Log out
+      </button>
+    </form>
+  </aside>
+
+  {# ─── Main column ─── #}
+  <div class="flex-1 flex flex-col min-w-0">
+    {# Top bar #}
+    <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-3 flex items-center gap-3 md:gap-4 sticky top-0 z-20"
+            role="banner">
+      {# Mobile menu toggle (hidden on desktop) #}
+      <button @click="mobileNavOpen = !mobileNavOpen"
+              class="md:hidden p-2 text-slate-500 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+              aria-label="Toggle navigation menu"
+              :aria-expanded="mobileNavOpen.toString()">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+
+      <label class="flex-1 max-w-2xl">
+        <span class="sr-only">Search</span>
+        <input type="search"
+               placeholder="Search patients, docs, orders…"
+               aria-label="Global search"
+               class="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md
+                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white">
+      </label>
+      <div class="flex items-center gap-2 md:gap-3">
+        <a href="/notifications"
+           aria-label="Notifications"
+           class="relative p-2 text-slate-500 hover:text-slate-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+          </svg>
+        </a>
+        {% if user %}
+        <div class="hidden sm:flex items-center gap-2 px-2 py-1 rounded-md hover:bg-slate-100"
+             aria-label="Current user">
+          <div class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-medium"
+               aria-hidden="true">
+            {{ user.role[:1] | upper }}
+          </div>
+          <div class="text-xs">
+            <div class="font-medium text-slate-900">{{ user.role.replace('_', ' ').title() }}</div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </header>
+
+    {# Mobile slide-down nav #}
+    <nav x-show="mobileNavOpen" x-cloak
+         class="md:hidden bg-white border-b border-slate-200 px-2 py-2 space-y-0.5 text-sm"
+         aria-label="Mobile navigation">
+      {% for href, key, label in nav_items %}
+        <a href="{{ href }}"
+           class="block px-3 py-2 rounded-md
+                  {% if active_nav == key %}bg-blue-50 text-blue-700 font-medium{% else %}text-slate-700 hover:bg-slate-100{% endif %}">
+          {{ label }}
+        </a>
+      {% endfor %}
+      <hr class="my-1 border-slate-200">
+      <a href="/profile" class="block px-3 py-2 rounded-md text-slate-700 hover:bg-slate-100">Profile</a>
+      <a href="/settings" class="block px-3 py-2 rounded-md text-slate-700 hover:bg-slate-100">Settings</a>
+      {% if user and 'baa.view' in user.permissions %}
+        <a href="/admin/baa" class="block px-3 py-2 rounded-md text-slate-700 hover:bg-slate-100">BAA</a>
+        <a href="/admin/audit" class="block px-3 py-2 rounded-md text-slate-700 hover:bg-slate-100">Audit</a>
+      {% endif %}
+      <form action="/logout" method="post">
+        <button class="w-full text-left px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-md">Log out</button>
+      </form>
+    </nav>
+
+    {# Page content #}
+    <main class="flex-1 px-4 md:px-6 py-4 md:py-6 overflow-auto pb-20 md:pb-6"
+          role="main" tabindex="-1">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  {# ─── Mobile bottom nav (compact, 5 items) ─── #}
+  <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-30 grid grid-cols-5"
+       aria-label="Bottom navigation">
+    {% for href, key, label, icon in [
+      ('/', 'home', 'Home', '🏠'),
+      ('/sync', 'sync', 'Sync', '📥'),
+      ('/patients', 'patients', 'Patients', '🧑‍⚕️'),
+      ('/care-docs', 'care-docs', 'Docs', '📄'),
+      ('/flags', 'flags', 'Flags', '⚑'),
+    ] %}
+      <a href="{{ href }}"
+         class="flex flex-col items-center justify-center py-2 text-xs
+                {% if active_nav == key %}text-blue-700 font-medium{% else %}text-slate-600{% endif %}">
+        <span class="text-base" aria-hidden="true">{{ icon }}</span>
+        {{ label }}
+      </a>
+    {% endfor %}
+  </nav>
+</div>
+
+<style>[x-cloak]{display:none!important}</style>
+{% endblock %}

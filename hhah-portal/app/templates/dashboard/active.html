@@ -1,0 +1,47 @@
+{% extends "_shell.html" %}
+{% set active_nav = "home" %}
+{% block title %}Dashboard · {{ app_brand }}{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-xl font-semibold text-slate-900">Dashboard</h1>
+  <select class="text-sm bg-white border border-slate-200 rounded-md px-3 py-1.5">
+    <option>Last 30 days</option>
+    <option>Today</option>
+    <option>Last 7 days</option>
+    <option>Quarter</option>
+  </select>
+</div>
+
+{# KPI tiles #}
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+  {% for label, value, color in [
+    ('Active Patients',          kpis.active_patients,        'text-emerald-700'),
+    ('Episodes Ready to Bill',   kpis.ready_to_bill,          'text-amber-700'),
+    ('Pending Signatures',       kpis.pending_signatures,     'text-orange-700'),
+    ('Unread from Us',           kpis.unread_communications,  'text-blue-700'),
+  ] %}
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+      <div class="text-xs font-medium text-slate-500 uppercase tracking-wide">{{ label }}</div>
+      <div class="text-3xl font-bold {{ color }} mt-2">{{ value }}</div>
+    </div>
+  {% endfor %}
+</div>
+
+{# Alerts panel #}
+<div class="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+  <h2 class="text-sm font-semibold text-slate-700 mb-3">Alerts</h2>
+  <div class="text-sm text-slate-500">No active alerts.</div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <h2 class="text-sm font-semibold text-slate-700 mb-3">Patients by physician</h2>
+    <div class="text-sm text-slate-500">Once data lands, you'll see distribution here.</div>
+  </div>
+  <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <h2 class="text-sm font-semibold text-slate-700 mb-3">Recert calendar</h2>
+    <div class="text-sm text-slate-500">Upcoming recertifications appear here.</div>
+  </div>
+</div>
+{% endblock %}

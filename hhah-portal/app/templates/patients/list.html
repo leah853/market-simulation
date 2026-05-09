@@ -1,0 +1,73 @@
+{% extends "_shell.html" %}
+{% set active_nav = "patients" %}
+{% block title %}Patients · {{ app_brand }}{% endblock %}
+
+{% block content %}
+<h1 class="text-xl font-semibold text-slate-900 mb-6">Patient Episodes</h1>
+
+<form method="get" class="flex items-center gap-3 mb-6">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search by name or MRN…"
+         class="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-md bg-white">
+  <label class="flex items-center gap-2 text-sm text-slate-600">
+    <input type="checkbox" name="flagged" value="1" {% if flagged %}checked{% endif %}>
+    Flagged only
+  </label>
+  <button type="submit" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50">Filter</button>
+</form>
+
+<div class="bg-white rounded-xl border border-slate-200">
+  {% if rows %}
+  <table class="w-full text-sm">
+    <thead class="text-xs text-slate-500 uppercase tracking-wide">
+      <tr>
+        <th class="text-left px-5 py-2 font-medium">Patient</th>
+        <th class="text-left px-5 py-2 font-medium">PG · Practitioner</th>
+        <th class="text-left px-5 py-2 font-medium">Current Episode</th>
+        <th class="text-left px-5 py-2 font-medium">⚑</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in rows %}
+      <tr class="border-t border-slate-100 hover:bg-slate-50 cursor-pointer"
+          onclick="window.location='/patients/{{ r.patient.patient_id }}'">
+        <td class="px-5 py-3">
+          <div class="font-medium text-slate-900">{{ r.patient.last_name }}, {{ r.patient.first_name }}</div>
+          <div class="text-xs text-slate-500">MRN {{ r.patient.mrn }}</div>
+        </td>
+        <td class="px-5 py-3 text-slate-700">
+          {{ r.pg_name or '—' }}
+          {% if r.practitioner_label %}
+            <div class="text-xs text-slate-500">{{ r.practitioner_label }}</div>
+          {% endif %}
+        </td>
+        <td class="px-5 py-3 text-slate-700">
+          {% if r.current_episode_start and r.current_episode_end %}
+            {{ r.current_episode_start.isoformat() }} → {{ r.current_episode_end.isoformat() }}
+            <div class="text-xs">
+              {% if r.recert_overdue %}
+                <span class="text-red-600 font-medium">⚠ recert overdue</span>
+              {% elif r.current_episode_day %}
+                <span class="text-slate-500">day {{ r.current_episode_day }} of 60</span>
+              {% endif %}
+            </div>
+          {% else %}
+            <span class="text-slate-400">No active episode</span>
+          {% endif %}
+        </td>
+        <td class="px-5 py-3 text-slate-700">
+          {% if r.flag_count %}
+            <span class="text-amber-700 text-xs font-medium">⚑ {{ r.flag_count }}</span>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <div class="p-12 text-center text-sm text-slate-500">
+      No patients yet. Patients appear here as data syncs.
+      <a href="/sync" class="text-blue-600 ml-1">Upload a batch</a>.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

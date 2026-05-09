@@ -1,0 +1,21 @@
+{% extends "_base.html" %}
+{% block title %}Not found · {{ app_brand or "Eonexea" }}{% endblock %}
+{% block body %}
+<div class="min-h-screen flex items-center justify-center px-4">
+  <div class="text-center max-w-md">
+    <div class="text-5xl mb-4">🚧</div>
+    <h1 class="text-xl font-semibold text-slate-900 mb-2">Page not found</h1>
+    <p class="text-sm text-slate-500 mb-6">
+      It may have moved, or you may not have permission to view it.
+    </p>
+    <div class="flex items-center justify-center gap-3">
+      <a href="/" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+        Back to dashboard
+      </a>
+      <a href="/communication" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50">
+        Talk to Us
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

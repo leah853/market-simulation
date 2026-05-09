@@ -1,0 +1,49 @@
+{% extends "_shell.html" %}
+{% block title %}Audit Activity · {{ app_brand }}{% endblock %}
+
+{% block content %}
+<div class="flex items-center gap-2 mb-4">
+  <h1 class="text-xl font-semibold text-slate-900">📊 Audit Activity</h1>
+  <span class="px-2 py-0.5 text-xs font-medium bg-amber-50 text-amber-700 rounded">ADMIN ONLY</span>
+</div>
+
+<form method="get" class="flex flex-wrap gap-3 mb-4 text-sm">
+  <input type="text" name="action" value="{{ filter_action or '' }}" placeholder="Action type…"
+         class="px-3 py-1.5 border border-slate-200 rounded-md bg-white">
+  <input type="text" name="subject_type" value="{{ filter_subject_type or '' }}" placeholder="Subject type…"
+         class="px-3 py-1.5 border border-slate-200 rounded-md bg-white">
+  <button type="submit" class="px-3 py-1.5 text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50">Apply</button>
+</form>
+
+<div class="bg-white rounded-xl border border-slate-200 overflow-x-auto">
+  {% if entries %}
+  <table class="w-full text-sm">
+    <thead class="text-xs text-slate-500 uppercase tracking-wide">
+      <tr>
+        <th class="text-left px-5 py-2 font-medium">Time</th>
+        <th class="text-left px-5 py-2 font-medium">Actor</th>
+        <th class="text-left px-5 py-2 font-medium">Action</th>
+        <th class="text-left px-5 py-2 font-medium">Subject</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for e in entries %}
+      <tr class="border-t border-slate-100">
+        <td class="px-5 py-2 text-xs text-slate-600">{{ e.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+        <td class="px-5 py-2 text-slate-700">
+          {% if e.actor_user_id %}{{ actor_names.get(e.actor_user_id, '—') }}{% else %}<span class="text-slate-400">system</span>{% endif %}
+        </td>
+        <td class="px-5 py-2 font-mono text-xs text-slate-700">{{ e.action_type }}</td>
+        <td class="px-5 py-2 text-xs text-slate-600">
+          {{ e.subject_type }}
+          {% if e.subject_label %} · {{ e.subject_label }}{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="p-12 text-center text-sm text-slate-500">No audit entries.</div>
+  {% endif %}
+</div>
+{% endblock %}

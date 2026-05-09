@@ -1,0 +1,45 @@
+{% extends "_shell.html" %}
+{% set active_nav = "communication" %}
+{% block title %}Talk to Us · {{ app_brand }}{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-xl font-semibold text-slate-900">Talk to Us</h1>
+  <a href="/communication/new"
+     class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">+ New thread</a>
+</div>
+
+<div class="bg-white rounded-xl border border-slate-200">
+  {% if threads %}
+    <div class="divide-y divide-slate-100">
+    {% for t in threads %}
+      <a href="/communication/{{ t.id }}"
+         class="block p-4 hover:bg-slate-50">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="font-medium text-slate-900 truncate">{{ t.subject }}</div>
+            {% if t.last_message_preview %}
+              <div class="text-sm text-slate-600 truncate mt-0.5">{{ t.last_message_preview }}</div>
+            {% endif %}
+            <div class="flex items-center gap-2 mt-1 text-xs text-slate-500">
+              <span>From Us</span>
+              {% if t.linked_patient_ids %}<span>·</span><span>linked to patient</span>{% endif %}
+              {% if t.linked_document_ids %}<span>·</span><span>linked to document</span>{% endif %}
+            </div>
+          </div>
+          <div class="text-xs text-slate-400 whitespace-nowrap">
+            {% if t.last_message_at %}{{ t.last_message_at.strftime('%Y-%m-%d') }}{% endif %}
+          </div>
+        </div>
+      </a>
+    {% endfor %}
+    </div>
+  {% else %}
+    <div class="p-12 text-center">
+      <p class="text-sm text-slate-500 mb-3">No threads yet.</p>
+      <a href="/communication/new"
+         class="inline-block px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">+ New thread</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

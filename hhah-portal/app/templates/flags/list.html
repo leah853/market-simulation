@@ -1,0 +1,101 @@
+{% extends "_shell.html" %}
+{% set active_nav = "flags" %}
+{% block title %}Flags · {{ app_brand }}{% endblock %}
+
+{% block content %}
+<h1 class="text-xl font-semibold text-slate-900 mb-4">Flags</h1>
+
+{# Summary tiles #}
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+  {% for label, count, color in [
+    ('Open',           summary.open,             'text-amber-700'),
+    ('Acknowledged',   summary.acknowledged,     'text-blue-700'),
+    ('Resolved (7d)',  summary.resolved_last_7d, 'text-emerald-700'),
+    ('Escalated',      summary.escalated,        'text-red-700'),
+  ] %}
+    <div class="bg-white rounded-xl border border-slate-200 p-4">
+      <div class="text-xs text-slate-500 uppercase tracking-wide">{{ label }}</div>
+      <div class="text-2xl font-bold {{ color }} mt-1">{{ count }}</div>
+    </div>
+  {% endfor %}
+</div>
+
+{# Filters #}
+<form method="get" class="flex flex-wrap gap-3 mb-4 text-sm">
+  <select name="source" class="px-3 py-1.5 border border-slate-200 rounded-md bg-white">
+    <option value="">All sources</option>
+    {% for s in ['hhah_user', 'pg', 'provider', 'us', 'system_auto'] %}
+      <option value="{{ s }}" {% if filter_source == s %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <select name="severity" class="px-3 py-1.5 border border-slate-200 rounded-md bg-white">
+    <option value="">Any severity</option>
+    {% for s in ['low', 'medium', 'high', 'critical'] %}
+      <option value="{{ s }}" {% if filter_severity == s %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <select name="status" class="px-3 py-1.5 border border-slate-200 rounded-md bg-white">
+    <option value="">Any status</option>
+    {% for s in ['open', 'acknowledged', 'resolved', 'escalated', 'dismissed'] %}
+      <option value="{{ s }}" {% if filter_status == s %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <label class="flex items-center gap-2 text-slate-600">
+    <input type="checkbox" name="mine" value="1" {% if mine %}checked{% endif %}> Mine only
+  </label>
+  <button type="submit" class="px-3 py-1.5 text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50">Apply</button>
+</form>
+
+<div class="bg-white rounded-xl border border-slate-200">
+  {% if flags %}
+    <div class="divide-y divide-slate-100">
+    {% for f in flags %}
+      <div class="p-4">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              {% set sev_color = {
+                'low':      'bg-slate-100 text-slate-700',
+                'medium':   'bg-amber-50 text-amber-700',
+                'high':     'bg-orange-50 text-orange-700',
+                'critical': 'bg-red-50 text-red-700',
+              }[f.severity] %}
+              <span class="px-2 py-0.5 rounded text-xs font-medium {{ sev_color }}">⚑ {{ f.severity|upper }}</span>
+              <span class="text-xs text-slate-500">{{ f.subject_type }} · {{ f.category }}</span>
+              <span class="text-xs text-slate-400">{{ f.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+            </div>
+            <div class="text-sm text-slate-900">{{ f.reason }}</div>
+            {% if f.notes %}<div class="text-xs text-slate-600 mt-1">{{ f.notes }}</div>{% endif %}
+            <div class="text-xs text-slate-500 mt-1">Source: {{ f.source }}</div>
+          </div>
+          <div class="flex flex-col gap-2 items-end">
+            {% set st_color = {
+              'open':         'bg-amber-50 text-amber-700',
+              'acknowledged': 'bg-blue-50 text-blue-700',
+              'resolved':     'bg-emerald-50 text-emerald-700',
+              'escalated':    'bg-red-50 text-red-700',
+              'dismissed':    'bg-slate-100 text-slate-700',
+            }[f.status] %}
+            <span class="px-2 py-0.5 rounded text-xs font-medium {{ st_color }}">{{ f.status }}</span>
+            {% if f.status in ['open', 'acknowledged', 'escalated'] %}
+              <div class="flex gap-1">
+                {% if f.status == 'open' %}
+                  <form action="/flags/{{ f.id }}/acknowledge" method="post" class="inline">
+                    <button class="px-2 py-1 text-xs text-blue-700 hover:bg-blue-50 rounded">Acknowledge</button>
+                  </form>
+                {% endif %}
+                <form action="/flags/{{ f.id }}/resolve" method="post" class="inline">
+                  <button class="px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-50 rounded">Resolve</button>
+                </form>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+    </div>
+  {% else %}
+    <div class="p-12 text-center text-sm text-slate-500">No flags. 🎉</div>
+  {% endif %}
+</div>
+{% endblock %}

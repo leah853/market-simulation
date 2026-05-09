@@ -1,0 +1,47 @@
+{% extends "_shell.html" %}
+{% set active_nav = "communication" %}
+{% block title %}New thread · {{ app_brand }}{% endblock %}
+
+{% block content %}
+<a href="/communication" class="text-sm text-slate-500 hover:text-slate-700 mb-2 inline-block">← Back</a>
+<h1 class="text-xl font-semibold text-slate-900 mb-1">Start a new thread</h1>
+<p class="text-sm text-slate-500 mb-6">Send a message to Us (Eonexea ops).</p>
+
+<form action="/communication/new" method="post" class="bg-white rounded-xl border border-slate-200 p-6 max-w-xl space-y-4">
+  <div>
+    <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">To</div>
+    <div class="text-sm text-slate-900 font-medium">Us (Eonexea ops)</div>
+  </div>
+
+  {% if linked_patient_id %}
+    <input type="hidden" name="linked_patient_id" value="{{ linked_patient_id }}">
+    <div class="text-xs px-3 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-md">
+      🔗 Linked to a patient
+    </div>
+  {% endif %}
+  {% if linked_document_id %}
+    <input type="hidden" name="linked_document_id" value="{{ linked_document_id }}">
+    <div class="text-xs px-3 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-md">
+      🔗 Linked to a document
+    </div>
+  {% endif %}
+
+  <div>
+    <label class="block text-xs font-medium text-slate-700 mb-1">Subject</label>
+    <input type="text" name="subject" required maxlength="200"
+           class="w-full px-3 py-2 text-sm border border-slate-200 rounded-md
+                  focus:outline-none focus:ring-2 focus:ring-blue-500">
+  </div>
+  <div>
+    <label class="block text-xs font-medium text-slate-700 mb-1">Message</label>
+    <textarea name="body" rows="6" required maxlength="8000"
+              class="w-full px-3 py-2 text-sm border border-slate-200 rounded-md
+                     focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+  </div>
+
+  <div class="flex justify-end gap-2 pt-2">
+    <a href="/communication" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-md">Cancel</a>
+    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">Send</button>
+  </div>
+</form>
+{% endblock %}

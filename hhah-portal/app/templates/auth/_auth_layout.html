@@ -1,0 +1,25 @@
+{% extends "_base.html" %}
+
+{# Centered card layout for all auth screens #}
+{% block body %}
+<div class="min-h-screen flex flex-col">
+  <div class="flex-1 flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md">
+      <div class="text-center mb-8">
+        <div class="text-2xl font-bold tracking-wide text-slate-900">EONEXEA</div>
+        <div class="text-sm text-slate-500 mt-1">Sunrise Home Health Portal</div>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+        {% block auth_content %}{% endblock %}
+      </div>
+      <div class="text-center mt-6 text-xs text-slate-500 space-x-3">
+        <a href="#" class="hover:text-slate-700">Privacy</a>
+        <span>·</span>
+        <a href="#" class="hover:text-slate-700">Terms</a>
+        <span>·</span>
+        <a href="#" class="hover:text-slate-700">Reach Us</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
